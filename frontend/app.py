@@ -16,18 +16,70 @@ from simulation import simulate_actions
 
 st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
 
+with st.sidebar:
+    st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
+    dark_mode = st.toggle("Dark mode", value=True)
+    page = st.radio("Navigation", ["Landing", "Dashboard", "About"])
+    st.markdown(
+        """
+        <div class="menu-item">
+            <span>Sections</span>
+            <span class="menu-badge">LIVE</span>
+        </div>
+        <div class="nav-list">
+            <a href="#metrics">Metrics</a>
+            <a href="#recommendations">Recommendations</a>
+            <a href="#simulation">Simulation</a>
+            <a href="#about">About</a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    with st.expander("Energy Inputs", expanded=True):
+        it_energy_mwh = st.number_input(
+            "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
+        )
+        total_energy_mwh = st.number_input(
+            "Total Energy (MWh/year)", min_value=0.0, value=1300.0, step=10.0
+        )
+        carbon_factor = st.number_input(
+            "Carbon Factor (kg CO2/kWh)", min_value=0.0, value=0.30, step=0.01
+        )
+    with st.expander("Infrastructure Inputs", expanded=True):
+        servers = st.number_input("Number of Servers", min_value=0, value=320, step=10)
+        cpu_utilization = st.number_input(
+            "Average CPU Utilization (%)", min_value=0.0, max_value=100.0, value=18.0
+        )
+        virtualization_level = st.number_input(
+            "Virtualization Level (%)", min_value=0.0, max_value=100.0, value=45.0
+        )
+    with st.expander("Cooling & Facilities", expanded=True):
+        cooling_setpoint = st.number_input(
+            "Cooling Setpoint (°C)", min_value=10.0, max_value=30.0, value=19.0
+        )
+        aisle_containment = st.checkbox("Hot/Cold Aisle Containment in place", value=False)
+
+theme = "dark" if dark_mode else "light"
+bg = (
+    "radial-gradient(140% 140% at 0% 0%, #0f1d3b 0%, #0a1022 55%, #060914 100%)"
+    if dark_mode
+    else "radial-gradient(120% 120% at 0% 0%, #f3f6ff 0%, #f8fbff 60%, #ffffff 100%)"
+)
+text = "#e9edff" if dark_mode else "#1a2440"
+muted = "#c9d4ff" if dark_mode else "#4a5c88"
+
 st.markdown(
-    """
+    f"""
     <style>
-    .stApp {
-        background: radial-gradient(140% 140% at 0% 0%, #0f1d3b 0%, #0a1022 55%, #060914 100%);
-    }
-    h1, h2, h3, h4, h5, p, li, label, span, div {
-        color: #e9edff;
-    }
-    a { color: #bcd0ff; }
-    [data-testid="stMetricValue"] { color: #ffffff !important; text-shadow: 0 2px 6px rgba(0,0,0,0.45); }
-    [data-testid="stMetricLabel"] { color: #c9d4ff !important; }
+    .stApp {{
+        background: {bg};
+    }}
+    h1, h2, h3, h4, h5, p, li, label, span, div {{
+        color: {text};
+    }}
+    a {{ color: {muted}; }}
+    [data-testid="stMetricValue"] {{ color: {text} !important; text-shadow: 0 2px 6px rgba(0,0,0,0.25); }}
+    [data-testid="stMetricLabel"] {{ color: {muted} !important; }}
     .section-title {
         font-size: 18px;
         font-weight: 700;
@@ -167,11 +219,11 @@ st.markdown(
         font-weight: 600;
     }
     .stSidebar [role="radiogroup"] label {
-        color: #dbe6ff !important;
+        color: {text} !important;
         font-weight: 600;
     }
     .stSidebar [role="radiogroup"] label[data-selected="true"] {
-        color: #ffffff !important;
+        color: {text} !important;
     }
     .menu-item {
         display: flex;
@@ -179,9 +231,9 @@ st.markdown(
         gap: 8px;
         padding: 6px 8px;
         border-radius: 10px;
-        background: rgba(20, 30, 60, 0.6);
-        border: 1px solid rgba(255,255,255,0.08);
-        color: #dbe6ff;
+        background: {"rgba(20, 30, 60, 0.6)" if dark_mode else "rgba(230, 236, 255, 0.9)"};
+        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        color: {text};
         margin-bottom: 6px;
         font-size: 12px;
     }
@@ -190,10 +242,26 @@ st.markdown(
         font-size: 10px;
         padding: 2px 8px;
         border-radius: 999px;
-        background: rgba(120, 210, 255, 0.15);
-        border: 1px solid rgba(120, 210, 255, 0.35);
-        color: #d9f0ff;
+        background: {"rgba(120, 210, 255, 0.15)" if dark_mode else "rgba(76, 214, 180, 0.18)"};
+        border: 1px solid {"rgba(120, 210, 255, 0.35)" if dark_mode else "rgba(76, 214, 180, 0.45)"};
+        color: {text};
     }
+    .nav-list a {{
+        display: block;
+        padding: 6px 10px;
+        margin: 4px 0;
+        border-radius: 10px;
+        background: {"rgba(20, 30, 60, 0.45)" if dark_mode else "rgba(240, 244, 255, 0.9)"};
+        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        color: {text};
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+    }}
+    .nav-list a:hover {{
+        background: {"rgba(52, 75, 140, 0.7)" if dark_mode else "rgba(210, 225, 255, 0.9)"};
+        color: {text};
+    }}
     .stDataFrame, .stTable {
         background: rgba(20, 30, 60, 0.35);
         border-radius: 12px;
@@ -273,59 +341,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-with st.sidebar:
-    st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
-    page = st.radio("Navigation", ["Landing", "Dashboard", "About"])
-    st.markdown(
-        """
-        <div class="menu-item">
-            <svg class="svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-             xmlns="http://www.w3.org/2000/svg"><path d="M4 10h16v10H4z" fill="#cfe0ff"/>
-             <path d="M12 4l8 6H4l8-6z" fill="#9fb2ff"/></svg>
-            Home
-            <span class="menu-badge">PRO</span>
-        </div>
-        <div class="menu-item">
-            <svg class="svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-             xmlns="http://www.w3.org/2000/svg"><path d="M5 19h14v2H5z" fill="#cfe0ff"/>
-             <path d="M6 17V9h3v8H6zm5 0V5h3v12h-3zm5 0v-6h3v6h-3z" fill="#9fb2ff"/></svg>
-            KPIs
-            <span class="menu-badge">LIVE</span>
-        </div>
-        <div class="menu-item">
-            <svg class="svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
-             xmlns="http://www.w3.org/2000/svg"><path d="M4 4h16v6H4z" fill="#cfe0ff"/>
-             <path d="M6 13h12v7H6z" fill="#9fb2ff"/></svg>
-            Actions
-            <span class="menu-badge">AI</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    with st.expander("Energy Inputs", expanded=True):
-        it_energy_mwh = st.number_input(
-            "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
-        )
-        total_energy_mwh = st.number_input(
-            "Total Energy (MWh/year)", min_value=0.0, value=1300.0, step=10.0
-        )
-        carbon_factor = st.number_input(
-            "Carbon Factor (kg CO2/kWh)", min_value=0.0, value=0.30, step=0.01
-        )
-    with st.expander("Infrastructure Inputs", expanded=True):
-        servers = st.number_input("Number of Servers", min_value=0, value=320, step=10)
-        cpu_utilization = st.number_input(
-            "Average CPU Utilization (%)", min_value=0.0, max_value=100.0, value=18.0
-        )
-        virtualization_level = st.number_input(
-            "Virtualization Level (%)", min_value=0.0, max_value=100.0, value=45.0
-        )
-    with st.expander("Cooling & Facilities", expanded=True):
-        cooling_setpoint = st.number_input(
-            "Cooling Setpoint (°C)", min_value=10.0, max_value=30.0, value=19.0
-        )
-        aisle_containment = st.checkbox("Hot/Cold Aisle Containment in place", value=False)
 
 
 def action_icon_svg(action_title: str) -> str:
@@ -423,10 +438,11 @@ if page == "Dashboard":
         """
         <div class="topbar">
             <div class="logo">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
                  xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 2C7 2 3 6 3 11c0 4 2.6 7.5 6.4 8.7" stroke="#cfe0ff" stroke-width="2"/>
-                  <path d="M12 2c5 0 9 4 9 9 0 4-2.6 7.5-6.4 8.7" stroke="#9fb2ff" stroke-width="2"/>
+                  <path d="M6 3h12v6H6z" fill="#cfe0ff"/>
+                  <path d="M4 11h16v8H4z" fill="#9fb2ff"/>
+                  <path d="M12 2c3 1 4 3 4 5-2-1-4-1-6 0 0-2 1-4 2-5z" fill="#7ee6b4"/>
                 </svg>
                 GreenDC <span>Audit Console</span>
             </div>
