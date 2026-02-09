@@ -19,9 +19,25 @@ st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
 with st.sidebar:
     st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
     dark_mode = st.toggle("Dark mode", value=True)
-    page = st.radio("Navigation", ["Landing", "Dashboard", "About"])
     st.markdown(
         """
+        <div class="icon-nav">
+            <a href="?page=landing" title="Landing">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 xmlns="http://www.w3.org/2000/svg"><path d="M4 10h16v10H4z" fill="#7ea6ff"/>
+                 <path d="M12 4l8 6H4l8-6z" fill="#bcd0ff"/></svg>
+            </a>
+            <a href="?page=dashboard" title="Dashboard">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 xmlns="http://www.w3.org/2000/svg"><path d="M5 19h14v2H5z" fill="#7ea6ff"/>
+                 <path d="M6 17V9h3v8H6zm5 0V5h3v12h-3zm5 0v-6h3v6h-3z" fill="#bcd0ff"/></svg>
+            </a>
+            <a href="?page=about" title="About">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                 xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#7ea6ff" stroke-width="2"/>
+                 <path d="M12 8h.01M11 11h2v5h-2z" fill="#bcd0ff"/></svg>
+            </a>
+        </div>
         <div class="menu-item">
             <span>Sections</span>
             <span class="menu-badge">LIVE</span>
@@ -71,6 +87,9 @@ muted = "#c9d4ff" if dark_mode else "#4a5c88"
 st.markdown(
     f"""
     <style>
+    html {{
+        scroll-behavior: smooth;
+    }}
     .stApp {{
         background: {bg};
     }}
@@ -80,15 +99,15 @@ st.markdown(
     a {{ color: {muted}; }}
     [data-testid="stMetricValue"] {{ color: {text} !important; text-shadow: 0 2px 6px rgba(0,0,0,0.25); }}
     [data-testid="stMetricLabel"] {{ color: {muted} !important; }}
-    .section-title {
+    .section-title {{
         font-size: 18px;
         font-weight: 700;
         letter-spacing: 0.02em;
         margin: 6px 0 10px 0;
         color: #eaf0ff;
         text-shadow: 0 2px 6px rgba(0,0,0,0.4);
-    }
-    .topbar {
+    }}
+    .topbar {{
         position: sticky;
         top: 0;
         z-index: 999;
@@ -103,22 +122,22 @@ st.markdown(
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-    }
-    .logo {
+    }}
+    .logo {{
         display: flex;
         align-items: center;
         gap: 8px;
         font-weight: 800;
         letter-spacing: 0.02em;
         color: #e9edff;
-    }
-    .logo span {
+    }}
+    .logo span {{
         color: #bcd0ff;
         font-weight: 600;
         font-size: 12px;
         margin-left: 4px;
-    }
-    .nav a {
+    }}
+    .nav a {{
         text-decoration: none;
         margin-right: 12px;
         padding: 6px 10px;
@@ -127,16 +146,16 @@ st.markdown(
         border: 1px solid rgba(255,255,255,0.08);
         color: #dbe6ff;
         font-size: 12px;
-    }
-    .nav a:hover {
+    }}
+    .nav a:hover {{
         background: rgba(52, 75, 140, 0.7);
         color: #ffffff;
-    }
-    .subtle {
+    }}
+    .subtle {{
         opacity: 0.8;
         font-size: 13px;
-    }
-    .hero {
+    }}
+    .hero {{
         background: linear-gradient(145deg, rgba(28,45,94,0.9), rgba(10,16,34,0.95));
         color: #f7f7f7;
         padding: 28px 32px;
@@ -146,10 +165,10 @@ st.markdown(
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
-    }
-    .hero h1 { margin: 0 0 6px 0; font-size: 32px; }
-    .hero p { margin: 0; opacity: 0.9; }
-    .hero::after {
+    }}
+    .hero h1 {{ margin: 0 0 6px 0; font-size: 32px; }}
+    .hero p {{ margin: 0; opacity: 0.9; }}
+    .hero::after {{
         content: "";
         position: absolute;
         right: -80px;
@@ -159,8 +178,8 @@ st.markdown(
         border-radius: 50%;
         background: radial-gradient(circle, rgba(110,140,255,0.35), rgba(110,140,255,0.0) 60%);
         filter: blur(2px);
-    }
-    .badge {
+    }}
+    .badge {{
         display: inline-block;
         padding: 6px 12px;
         border-radius: 999px;
@@ -170,62 +189,78 @@ st.markdown(
         font-size: 12px;
         letter-spacing: 0.04em;
         margin-right: 8px;
-    }
-    .badge-solid {
+    }}
+    .badge-solid {{
         background: rgba(76, 214, 180, 0.18);
         border: 1px solid rgba(76, 214, 180, 0.45);
         color: #c9fff2;
-    }
-    .glass {
+    }}
+    .glass {{
         background: rgba(26, 36, 72, 0.65);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.12);
         box-shadow: 0 12px 24px rgba(0,0,0,0.25);
         border-radius: 16px;
         padding: 16px 18px;
-    }
-    .metric-card {
+    }}
+    .metric-card {{
         background: linear-gradient(180deg, rgba(32,48,96,0.98) 0%, rgba(16,24,48,0.98) 100%);
         color: #eef1ff;
         padding: 16px 18px;
         border-radius: 14px;
         box-shadow: 0 12px 28px rgba(0,0,0,0.45);
         border: 1px solid rgba(255,255,255,0.12);
-    }
-    .metric-card h3 { margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #c9d4ff; }
-    .metric-card .value { font-size: 28px; font-weight: 800; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
-    .stSidebar > div:first-child {
+    }}
+    .metric-card h3 {{ margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #c9d4ff; }}
+    .metric-card .value {{ font-size: 28px; font-weight: 800; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }}
+    .stSidebar > div:first-child {{
         background: linear-gradient(180deg, rgba(14,21,42,0.98), rgba(9,14,29,0.98));
         border-right: 1px solid rgba(255,255,255,0.08);
-    }
-    .stSidebar label, .stSidebar span, .stSidebar p {
-        color: #e9edff !important;
-    }
-    .sidebar-title {
+    }}
+    .stSidebar label, .stSidebar span, .stSidebar p {{
+        color: {text} !important;
+    }}
+    .sidebar-title {{
         font-weight: 800;
         font-size: 14px;
         letter-spacing: 0.08em;
         margin-bottom: 8px;
-        color: #cfe0ff;
-    }
-    .stSidebar [data-testid="stExpander"] {
+        color: {muted};
+    }}
+    .stSidebar [data-testid="stExpander"] {{
         background: rgba(18, 26, 51, 0.6);
         border-radius: 12px;
         border: 1px solid rgba(255,255,255,0.08);
         padding: 6px;
-    }
-    .stSidebar [data-testid="stExpander"] summary {
+    }}
+    .stSidebar [data-testid="stExpander"] summary {{
         color: #e9edff;
         font-weight: 600;
-    }
-    .stSidebar [role="radiogroup"] label {
+    }}
+    .stSidebar [role="radiogroup"] label {{
         color: {text} !important;
         font-weight: 600;
-    }
-    .stSidebar [role="radiogroup"] label[data-selected="true"] {
+    }}
+    .stSidebar [role="radiogroup"] label[data-selected="true"] {{
         color: {text} !important;
-    }
-    .menu-item {
+    }}
+    .icon-nav {{
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-bottom: 8px;
+    }}
+    .icon-nav a {{
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        height: 34px;
+        border-radius: 10px;
+        background: {"rgba(20, 30, 60, 0.6)" if dark_mode else "rgba(230, 236, 255, 0.9)"};
+        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        text-decoration: none;
+    }}
+    .menu-item {{
         display: flex;
         align-items: center;
         gap: 8px;
@@ -236,8 +271,8 @@ st.markdown(
         color: {text};
         margin-bottom: 6px;
         font-size: 12px;
-    }
-    .menu-badge {
+    }}
+    .menu-badge {{
         margin-left: auto;
         font-size: 10px;
         padding: 2px 8px;
@@ -245,7 +280,7 @@ st.markdown(
         background: {"rgba(120, 210, 255, 0.15)" if dark_mode else "rgba(76, 214, 180, 0.18)"};
         border: 1px solid {"rgba(120, 210, 255, 0.35)" if dark_mode else "rgba(76, 214, 180, 0.45)"};
         color: {text};
-    }
+    }}
     .nav-list a {{
         display: block;
         padding: 6px 10px;
@@ -262,33 +297,33 @@ st.markdown(
         background: {"rgba(52, 75, 140, 0.7)" if dark_mode else "rgba(210, 225, 255, 0.9)"};
         color: {text};
     }}
-    .stDataFrame, .stTable {
+    .stDataFrame, .stTable {{
         background: rgba(20, 30, 60, 0.35);
         border-radius: 12px;
         padding: 6px;
-    }
-    .stDataFrame div[role="grid"] {
+    }}
+    .stDataFrame div[role="grid"] {{
         background: rgba(16, 24, 48, 0.9);
         color: #e9edff;
-    }
-    .stDataFrame div[role="grid"] * {
+    }}
+    .stDataFrame div[role="grid"] * {{
         color: #e9edff !important;
-    }
-    .stTabs [data-baseweb="tab"] {
+    }}
+    .stTabs [data-baseweb="tab"] {{
         color: #c9d4ff;
         background: rgba(20, 30, 60, 0.5);
         border-radius: 12px;
         margin-right: 6px;
         padding: 8px 14px;
         border: 1px solid rgba(255,255,255,0.08);
-    }
-    .stTabs [aria-selected="true"] {
+    }}
+    .stTabs [aria-selected="true"] {{
         background: rgba(52, 75, 140, 0.7);
         color: #ffffff;
         border: 1px solid rgba(255,255,255,0.2);
         box-shadow: 0 6px 16px rgba(0,0,0,0.35);
-    }
-    .footer {
+    }}
+    .footer {{
         margin-top: 20px;
         padding: 12px 16px;
         border-radius: 12px;
@@ -296,30 +331,30 @@ st.markdown(
         border: 1px solid rgba(255,255,255,0.08);
         font-size: 12px;
         color: #b7c3ff;
-    }
-    .section {
+    }}
+    .section {{
         background: rgba(14, 22, 45, 0.55);
         border: 1px solid rgba(255,255,255,0.08);
         border-radius: 16px;
         padding: 18px;
         margin-bottom: 16px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.35);
-    }
-    .rec-card {
+    }}
+    .rec-card {{
         background: linear-gradient(180deg, rgba(24, 36, 72, 0.95) 0%, rgba(12, 20, 40, 0.98) 100%);
         border: 1px solid rgba(255,255,255,0.12);
         border-radius: 14px;
         padding: 14px 16px;
         margin-bottom: 10px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.35);
-    }
-    .rec-title {
+    }}
+    .rec-title {{
         font-weight: 700;
         font-size: 14px;
         margin-bottom: 6px;
         color: #f1f4ff;
-    }
-    .rec-meta {
+    }}
+    .rec-meta {{
         display: inline-block;
         padding: 4px 10px;
         border-radius: 999px;
@@ -328,19 +363,25 @@ st.markdown(
         color: #d9f0ff;
         font-size: 11px;
         margin-top: 8px;
-    }
-    .svg-icon {
+    }}
+    .svg-icon {{
         vertical-align: middle;
         margin-right: 6px;
-    }
-    .action-icon {
+    }}
+    .action-icon {{
         vertical-align: middle;
         margin-right: 8px;
-    }
+    }}
     </style>
     """,
     unsafe_allow_html=True,
 )
+
+query = st.experimental_get_query_params()
+page_param = query.get("page", ["landing"])[0].lower()
+if page_param not in {"landing", "dashboard", "about"}:
+    page_param = "landing"
+page = page_param.capitalize()
 
 
 def action_icon_svg(action_title: str) -> str:
@@ -438,11 +479,22 @@ if page == "Dashboard":
         """
         <div class="topbar">
             <div class="logo">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
                  xmlns="http://www.w3.org/2000/svg">
-                  <path d="M6 3h12v6H6z" fill="#cfe0ff"/>
-                  <path d="M4 11h16v8H4z" fill="#9fb2ff"/>
-                  <path d="M12 2c3 1 4 3 4 5-2-1-4-1-6 0 0-2 1-4 2-5z" fill="#7ee6b4"/>
+                  <defs>
+                    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#7ee6b4"/>
+                      <stop offset="100%" stop-color="#4cd6b4"/>
+                    </linearGradient>
+                    <linearGradient id="dc" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#cfe0ff"/>
+                      <stop offset="100%" stop-color="#9fb2ff"/>
+                    </linearGradient>
+                  </defs>
+                  <path d="M5 4h14v6H5z" fill="url(#dc)"/>
+                  <path d="M4 12h16v7H4z" fill="url(#dc)"/>
+                  <path d="M12 2c3.2 1 4.5 3.2 4.5 5.4-2-1.2-4.5-1.2-6.8 0 0-2.2 1.3-4.4 2.3-5.4z"
+                        fill="url(#leaf)"/>
                 </svg>
                 GreenDC <span>Audit Console</span>
             </div>
