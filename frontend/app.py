@@ -36,6 +36,36 @@ st.markdown(
         color: #eaf0ff;
         text-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }
+    .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 999;
+        background: rgba(10, 16, 34, 0.75);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 14px;
+        padding: 10px 14px;
+        margin: 6px 0 16px 0;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    .nav a {
+        text-decoration: none;
+        margin-right: 12px;
+        padding: 6px 10px;
+        border-radius: 10px;
+        background: rgba(20, 30, 60, 0.6);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #dbe6ff;
+        font-size: 12px;
+    }
+    .nav a:hover {
+        background: rgba(52, 75, 140, 0.7);
+        color: #ffffff;
+    }
     .subtle {
         opacity: 0.8;
         font-size: 13px;
@@ -140,6 +170,34 @@ st.markdown(
         font-size: 12px;
         color: #b7c3ff;
     }
+    .rec-card {
+        background: linear-gradient(180deg, rgba(24, 36, 72, 0.95) 0%, rgba(12, 20, 40, 0.98) 100%);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 14px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+    }
+    .rec-title {
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 6px;
+        color: #f1f4ff;
+    }
+    .rec-meta {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: rgba(120, 210, 255, 0.15);
+        border: 1px solid rgba(120, 210, 255, 0.35);
+        color: #d9f0ff;
+        font-size: 11px;
+        margin-top: 8px;
+    }
+    .svg-icon {
+        vertical-align: middle;
+        margin-right: 6px;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -187,10 +245,24 @@ with st.sidebar:
     )
 
 with dashboard_tab:
+    st.markdown(
+        """
+        <div class="topbar">
+            <div><b>GreenDC</b> <span class="subtle">| Audit Console</span></div>
+            <div class="nav">
+                <a href="#metrics">Metrics</a>
+                <a href="#recommendations">Recommendations</a>
+                <a href="#simulation">Simulation</a>
+                <a href="#about">About</a>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     metrics_col, recs_col = st.columns([1, 1])
 
     with metrics_col:
-        st.markdown("<div class='section-title'>Key Metrics</div>", unsafe_allow_html=True)
+        st.markdown("<div id='metrics' class='section-title'>Key Metrics</div>", unsafe_allow_html=True)
         pue = calculate_pue(it_energy_mwh, total_energy_mwh)
         dcie = calculate_dcie(it_energy_mwh, total_energy_mwh)
         co2_tonnes = calculate_co2_tonnes(total_energy_mwh, carbon_factor)
@@ -198,17 +270,29 @@ with dashboard_tab:
         metric_cols = st.columns(3)
         with metric_cols[0]:
             st.markdown(
-                f"<div class='metric-card'><h3>⚡ PUE</h3><div class='value'>{pue:.2f}</div></div>",
+                f"<div class='metric-card'><h3>"
+                f"<svg class='svg-icon' width='14' height='14' viewBox='0 0 24 24' fill='none' "
+                f"xmlns='http://www.w3.org/2000/svg'><path d='M13 2L3 14h7l-1 8 10-12h-7l1-8z' "
+                f"fill='#cfe0ff'/></svg>PUE</h3><div class='value'>{pue:.2f}</div></div>",
                 unsafe_allow_html=True,
             )
         with metric_cols[1]:
             st.markdown(
-                f"<div class='metric-card'><h3>📈 DCiE</h3><div class='value'>{dcie:.1f}%</div></div>",
+                f"<div class='metric-card'><h3>"
+                f"<svg class='svg-icon' width='14' height='14' viewBox='0 0 24 24' fill='none' "
+                f"xmlns='http://www.w3.org/2000/svg'><path d='M4 19h16v2H4z' fill='#cfe0ff'/>"
+                f"<path d='M6 17V9h3v8H6zm5 0V5h3v12h-3zm5 0v-6h3v6h-3z' fill='#cfe0ff'/></svg>"
+                f"DCiE</h3><div class='value'>{dcie:.1f}%</div></div>",
                 unsafe_allow_html=True,
             )
         with metric_cols[2]:
             st.markdown(
-                f"<div class='metric-card'><h3>🌍 CO2</h3><div class='value'>{co2_tonnes:.1f} t/y</div></div>",
+                f"<div class='metric-card'><h3>"
+                f"<svg class='svg-icon' width='14' height='14' viewBox='0 0 24 24' fill='none' "
+                f"xmlns='http://www.w3.org/2000/svg'><path d='M12 2C7 2 3 6 3 11c0 4 2.6 7.5 6.4 8.7'"
+                f" stroke='#cfe0ff' stroke-width='2' fill='none'/>"
+                f"<path d='M12 2c5 0 9 4 9 9 0 4-2.6 7.5-6.4 8.7' stroke='#cfe0ff' stroke-width='2' fill='none'/>"
+                f"</svg>CO2</h3><div class='value'>{co2_tonnes:.1f} t/y</div></div>",
                 unsafe_allow_html=True,
             )
 
@@ -223,7 +307,7 @@ with dashboard_tab:
         )
 
     with recs_col:
-        st.markdown("<div class='section-title'>AI Recommendations</div>", unsafe_allow_html=True)
+        st.markdown("<div id='recommendations' class='section-title'>AI Recommendations</div>", unsafe_allow_html=True)
         recommendations = build_recommendations(
             cpu_utilization_pct=cpu_utilization,
             cooling_setpoint_c=cooling_setpoint,
@@ -238,30 +322,17 @@ with dashboard_tab:
             }
             for r in recommendations
         ]
-        recs_df = pd.DataFrame(recs_data)
-        recs_style = (
-            recs_df.style.set_properties(
-                **{
-                    "background-color": "rgba(15, 25, 50, 0.85)",
-                    "color": "#e9edff",
-                    "border-color": "rgba(255,255,255,0.06)",
-                }
+        for rec in recs_data:
+            st.markdown(
+                f"<div class='rec-card'>"
+                f"<div class='rec-title'>{rec['Action']}</div>"
+                f"<div class='subtle'>{rec['Why it helps']}</div>"
+                f"<div class='rec-meta'>Estimated Saving: {rec['Estimated Saving (%)']}%</div>"
+                f"</div>",
+                unsafe_allow_html=True,
             )
-            .set_table_styles(
-                [
-                    {
-                        "selector": "th",
-                        "props": [
-                            ("background-color", "rgba(22, 36, 72, 0.95)"),
-                            ("color", "#cfe0ff"),
-                        ],
-                    }
-                ]
-            )
-        )
-        st.dataframe(recs_style, use_container_width=True, hide_index=True)
 
-    st.markdown("<div class='section-title'>Before / After Simulation</div>", unsafe_allow_html=True)
+    st.markdown("<div id='simulation' class='section-title'>Before / After Simulation</div>", unsafe_allow_html=True)
     actions = [{"estimated_saving_pct": r.estimated_saving_pct} for r in recommendations]
     simulation = simulate_actions(total_energy_mwh, actions)
 
@@ -291,7 +362,7 @@ with dashboard_tab:
     )
 
 with about_tab:
-    st.markdown("<div class='section-title'>About the Platform</div>", unsafe_allow_html=True)
+    st.markdown("<div id='about' class='section-title'>About the Platform</div>", unsafe_allow_html=True)
     st.markdown(
         """
         <div class="glass">
