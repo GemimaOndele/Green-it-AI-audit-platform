@@ -52,6 +52,20 @@ st.markdown(
         justify-content: space-between;
         gap: 12px;
     }
+    .logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        color: #e9edff;
+    }
+    .logo span {
+        color: #bcd0ff;
+        font-weight: 600;
+        font-size: 12px;
+        margin-left: 4px;
+    }
     .nav a {
         text-decoration: none;
         margin-right: 12px;
@@ -152,6 +166,34 @@ st.markdown(
         color: #e9edff;
         font-weight: 600;
     }
+    .stSidebar [role="radiogroup"] label {
+        color: #dbe6ff !important;
+        font-weight: 600;
+    }
+    .stSidebar [role="radiogroup"] label[data-selected="true"] {
+        color: #ffffff !important;
+    }
+    .menu-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 10px;
+        background: rgba(20, 30, 60, 0.6);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: #dbe6ff;
+        margin-bottom: 6px;
+        font-size: 12px;
+    }
+    .menu-badge {
+        margin-left: auto;
+        font-size: 10px;
+        padding: 2px 8px;
+        border-radius: 999px;
+        background: rgba(120, 210, 255, 0.15);
+        border: 1px solid rgba(120, 210, 255, 0.35);
+        color: #d9f0ff;
+    }
     .stDataFrame, .stTable {
         background: rgba(20, 30, 60, 0.35);
         border-radius: 12px;
@@ -186,6 +228,14 @@ st.markdown(
         border: 1px solid rgba(255,255,255,0.08);
         font-size: 12px;
         color: #b7c3ff;
+    }
+    .section {
+        background: rgba(14, 22, 45, 0.55);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        padding: 18px;
+        margin-bottom: 16px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.35);
     }
     .rec-card {
         background: linear-gradient(180deg, rgba(24, 36, 72, 0.95) 0%, rgba(12, 20, 40, 0.98) 100%);
@@ -227,6 +277,32 @@ st.markdown(
 with st.sidebar:
     st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
     page = st.radio("Navigation", ["Landing", "Dashboard", "About"])
+    st.markdown(
+        """
+        <div class="menu-item">
+            <svg class="svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+             xmlns="http://www.w3.org/2000/svg"><path d="M4 10h16v10H4z" fill="#cfe0ff"/>
+             <path d="M12 4l8 6H4l8-6z" fill="#9fb2ff"/></svg>
+            Home
+            <span class="menu-badge">PRO</span>
+        </div>
+        <div class="menu-item">
+            <svg class="svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+             xmlns="http://www.w3.org/2000/svg"><path d="M5 19h14v2H5z" fill="#cfe0ff"/>
+             <path d="M6 17V9h3v8H6zm5 0V5h3v12h-3zm5 0v-6h3v6h-3z" fill="#9fb2ff"/></svg>
+            KPIs
+            <span class="menu-badge">LIVE</span>
+        </div>
+        <div class="menu-item">
+            <svg class="svg-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+             xmlns="http://www.w3.org/2000/svg"><path d="M4 4h16v6H4z" fill="#cfe0ff"/>
+             <path d="M6 13h12v7H6z" fill="#9fb2ff"/></svg>
+            Actions
+            <span class="menu-badge">AI</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     with st.expander("Energy Inputs", expanded=True):
         it_energy_mwh = st.number_input(
             "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
@@ -306,7 +382,7 @@ if page == "Landing":
         st.markdown("<div class='section-title'>Why GreenDC?</div>", unsafe_allow_html=True)
         st.markdown(
             """
-            <div class="glass">
+            <div class="section">
                 A practical platform to measure, explain, and validate energy and carbon reductions.
                 Built for industrial data centers with realistic constraints.
             </div>
@@ -316,7 +392,7 @@ if page == "Landing":
         st.markdown("")
         st.markdown(
             """
-            <div class="glass">
+            <div class="section">
                 <b>Core pillars:</b>
                 <ul>
                     <li>Measurable KPIs (PUE, DCiE, CO2)</li>
@@ -331,7 +407,7 @@ if page == "Landing":
         st.markdown("<div class='section-title'>Platform Snapshot</div>", unsafe_allow_html=True)
         st.markdown(
             """
-            <div class="glass">
+            <div class="section">
                 <b>Inputs:</b> Energy, cooling, utilization, carbon factor<br><br>
                 <b>Outputs:</b> KPIs, AI recommendations, savings simulation<br><br>
                 <span class="badge badge-solid">Audit-ready</span>
@@ -346,7 +422,14 @@ if page == "Dashboard":
     st.markdown(
         """
         <div class="topbar">
-            <div><b>GreenDC</b> <span class="subtle">| Audit Console</span></div>
+            <div class="logo">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 2C7 2 3 6 3 11c0 4 2.6 7.5 6.4 8.7" stroke="#cfe0ff" stroke-width="2"/>
+                  <path d="M12 2c5 0 9 4 9 9 0 4-2.6 7.5-6.4 8.7" stroke="#9fb2ff" stroke-width="2"/>
+                </svg>
+                GreenDC <span>Audit Console</span>
+            </div>
             <div class="nav">
                 <a href="#metrics">Metrics</a>
                 <a href="#recommendations">Recommendations</a>
@@ -357,10 +440,10 @@ if page == "Dashboard":
         """,
         unsafe_allow_html=True,
     )
+    st.markdown("<div id='metrics' class='section-title'>Key Metrics</div>", unsafe_allow_html=True)
     metrics_col, recs_col = st.columns([1, 1])
 
     with metrics_col:
-        st.markdown("<div id='metrics' class='section-title'>Key Metrics</div>", unsafe_allow_html=True)
         pue = calculate_pue(it_energy_mwh, total_energy_mwh)
         dcie = calculate_dcie(it_energy_mwh, total_energy_mwh)
         co2_tonnes = calculate_co2_tonnes(total_energy_mwh, carbon_factor)
@@ -395,7 +478,7 @@ if page == "Dashboard":
             )
 
         st.markdown(
-            f"<div class='glass'>Servers: <b>{servers}</b> | CPU Utilization: <b>{cpu_utilization:.1f}%</b>"
+            f"<div class='section'>Servers: <b>{servers}</b> | CPU Utilization: <b>{cpu_utilization:.1f}%</b>"
             f" | Cooling Setpoint: <b>{cooling_setpoint:.1f} °C</b></div>",
             unsafe_allow_html=True,
         )
@@ -446,7 +529,7 @@ if page == "Dashboard":
     st.bar_chart(sim_df.set_index("Scenario"))
 
     st.markdown(
-        f"<div class='glass'>Estimated total savings: <b>{simulation['total_savings_mwh']:.1f} MWh/year</b>"
+        f"<div class='section'>Estimated total savings: <b>{simulation['total_savings_mwh']:.1f} MWh/year</b>"
         f" ({simulation['total_savings_pct']:.1f}%)</div>",
         unsafe_allow_html=True,
     )
