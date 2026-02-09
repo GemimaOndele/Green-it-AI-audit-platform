@@ -10,11 +10,11 @@ GreenDC Audit Platform computes core Green IT metrics (PUE, DCiE, CO2) and build
 actionable optimization plans to reach a **-25% CO2 reduction target**. It is a
 lightweight, modular system that favors proportional computing and transparent logic.
 
-## 🧪 Branch Focus (dev)
+## ⭐ Branch Focus (main)
 
-- **Branch**: `dev`
-- **Owner**: Gemima Ondele Pourou (Platform Architect & Frontend/Integration)
-- **Role**: Integration branch for all feature work before the stable demo on `main`.
+- **Branch**: `main`
+- **Owner**: Gemima Ondele Pourou (Maintainer)
+- **Role**: Stable demo branch that presents the full platform experience.
 
 ## ✨ Core Features
 
