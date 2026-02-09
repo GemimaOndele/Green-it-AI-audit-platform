@@ -20,10 +20,10 @@ def build_recommendations(
     if cpu_utilization_pct < 30:
         recommendations.append(
             Recommendation(
-                title="Consolidation des serveurs",
+                title="Server consolidation",
                 reason=(
-                    "Faible taux d'utilisation CPU. Consolider permet de reduire le parc"
-                    " et les pertes d'energie."
+                    "Low CPU utilization. Consolidation reduces the server fleet and"
+                    " avoids idle energy losses."
                 ),
                 estimated_saving_pct=8.0,
             )
@@ -32,10 +32,10 @@ def build_recommendations(
     if cooling_setpoint_c < 22:
         recommendations.append(
             Recommendation(
-                title="Optimisation du point de consigne de refroidissement",
+                title="Optimize cooling setpoint",
                 reason=(
-                    "La temperature est basse. Un setpoint plus eleve peut reduire la"
-                    " consommation de refroidissement."
+                    "Current temperature is low. Raising the setpoint can reduce"
+                    " cooling consumption."
                 ),
                 estimated_saving_pct=6.0,
             )
@@ -44,10 +44,10 @@ def build_recommendations(
     if not has_aisle_containment:
         recommendations.append(
             Recommendation(
-                title="Mise en place d'allee chaude/froide",
+                title="Add hot/cold aisle containment",
                 reason=(
-                    "L'absence de confinement augmente les pertes. L'ajout d'allee"
-                    " chaude/froide ameliore l'efficacite du refroidissement."
+                    "Lack of containment increases losses. Aisle containment improves"
+                    " cooling efficiency."
                 ),
                 estimated_saving_pct=5.0,
             )
@@ -56,10 +56,10 @@ def build_recommendations(
     if virtualization_level_pct < 60:
         recommendations.append(
             Recommendation(
-                title="Renforcer la virtualisation",
+                title="Increase virtualization",
                 reason=(
-                    "Niveau de virtualisation faible. Plus de consolidation logique"
-                    " reduit le nombre de serveurs physiques."
+                    "Low virtualization level. More logical consolidation reduces"
+                    " the number of physical servers."
                 ),
                 estimated_saving_pct=7.0,
             )
@@ -68,8 +68,8 @@ def build_recommendations(
     if not recommendations:
         recommendations.append(
             Recommendation(
-                title="Maintenir les bonnes pratiques",
-                reason="Les indicateurs sont deja optimises. Continuer le suivi.",
+                title="Maintain best practices",
+                reason="Indicators look optimized. Keep continuous monitoring.",
                 estimated_saving_pct=0.0,
             )
         )

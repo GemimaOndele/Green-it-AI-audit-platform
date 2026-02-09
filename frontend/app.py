@@ -16,51 +16,100 @@ from simulation import simulate_actions
 
 st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
 
-st.title("GreenDC Audit Platform")
-st.caption("Audit energetique et carbone des data centers industriels")
+st.markdown(
+    """
+    <style>
+    .hero {
+        background: radial-gradient(120% 120% at 10% 10%, #1f3b73 0%, #0b1226 45%, #060914 100%);
+        color: #f7f7f7;
+        padding: 28px 32px;
+        border-radius: 16px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        border: 1px solid rgba(255,255,255,0.08);
+        margin-bottom: 20px;
+    }
+    .hero h1 { margin: 0 0 6px 0; font-size: 32px; }
+    .hero p { margin: 0; opacity: 0.9; }
+    .card {
+        background: linear-gradient(180deg, #121a33 0%, #0c1224 100%);
+        color: #eef1ff;
+        padding: 16px 18px;
+        border-radius: 14px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+        border: 1px solid rgba(255,255,255,0.06);
+    }
+    .card h3 { margin: 0 0 6px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: #9fb2ff; }
+    .card .value { font-size: 26px; font-weight: 700; }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+st.markdown(
+    """
+    <div class="hero">
+        <h1>GreenDC Audit Platform</h1>
+        <p>AI-assisted energy & carbon audit for industrial data centers — modern, 3D-inspired, and Green IT compliant.</p>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 with st.sidebar:
-    st.header("Parametres du data center")
+    st.header("Data Center Inputs")
     it_energy_mwh = st.number_input(
-        "Energie IT (MWh/an)", min_value=0.0, value=780.0, step=10.0
+        "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
     )
     total_energy_mwh = st.number_input(
-        "Energie totale (MWh/an)", min_value=0.0, value=1300.0, step=10.0
+        "Total Energy (MWh/year)", min_value=0.0, value=1300.0, step=10.0
     )
     carbon_factor = st.number_input(
-        "Facteur carbone (kg CO2/kWh)", min_value=0.0, value=0.30, step=0.01
+        "Carbon Factor (kg CO2/kWh)", min_value=0.0, value=0.30, step=0.01
     )
-    servers = st.number_input("Nombre de serveurs", min_value=0, value=320, step=10)
+    servers = st.number_input("Number of Servers", min_value=0, value=320, step=10)
     cpu_utilization = st.number_input(
-        "Utilisation CPU moyenne (%)", min_value=0.0, max_value=100.0, value=18.0
+        "Average CPU Utilization (%)", min_value=0.0, max_value=100.0, value=18.0
     )
     cooling_setpoint = st.number_input(
-        "Consigne de refroidissement (°C)", min_value=10.0, max_value=30.0, value=19.0
+        "Cooling Setpoint (°C)", min_value=10.0, max_value=30.0, value=19.0
     )
-    aisle_containment = st.checkbox("Allee chaude/froide en place", value=False)
+    aisle_containment = st.checkbox("Hot/Cold Aisle Containment in place", value=False)
     virtualization_level = st.number_input(
-        "Niveau de virtualisation (%)", min_value=0.0, max_value=100.0, value=45.0
+        "Virtualization Level (%)", min_value=0.0, max_value=100.0, value=45.0
     )
 
 metrics_col, recs_col = st.columns([1, 1])
 
 with metrics_col:
-    st.subheader("Indicateurs")
+    st.subheader("Key Metrics")
     pue = calculate_pue(it_energy_mwh, total_energy_mwh)
     dcie = calculate_dcie(it_energy_mwh, total_energy_mwh)
     co2_tonnes = calculate_co2_tonnes(total_energy_mwh, carbon_factor)
 
-    st.metric("PUE", f"{pue:.2f}")
-    st.metric("DCiE", f"{dcie:.1f} %")
-    st.metric("Emissions CO2", f"{co2_tonnes:.1f} tCO2/an")
+    metric_cols = st.columns(3)
+    with metric_cols[0]:
+        st.markdown(
+            f"<div class='card'><h3>PUE</h3><div class='value'>{pue:.2f}</div></div>",
+            unsafe_allow_html=True,
+        )
+    with metric_cols[1]:
+        st.markdown(
+            f"<div class='card'><h3>DCiE</h3><div class='value'>{dcie:.1f}%</div></div>",
+            unsafe_allow_html=True,
+        )
+    with metric_cols[2]:
+        st.markdown(
+            f"<div class='card'><h3>CO2</h3><div class='value'>{co2_tonnes:.1f} t/y</div></div>",
+            unsafe_allow_html=True,
+        )
 
     st.write(
-        f"Serveurs: {servers} | Utilisation CPU: {cpu_utilization:.1f}%"
-        f" | Consigne: {cooling_setpoint:.1f} °C"
+        f"Servers: {servers} | CPU Utilization: {cpu_utilization:.1f}%"
+        f" | Cooling Setpoint: {cooling_setpoint:.1f} °C"
     )
 
 with recs_col:
-    st.subheader("Recommandations")
+    st.subheader("AI Recommendations")
     recommendations = build_recommendations(
         cpu_utilization_pct=cpu_utilization,
         cooling_setpoint_c=cooling_setpoint,
@@ -70,33 +119,33 @@ with recs_col:
     recs_data = [
         {
             "Action": r.title,
-            "Justification": r.reason,
-            "Gain estime (%)": r.estimated_saving_pct,
+            "Why it helps": r.reason,
+            "Estimated Saving (%)": r.estimated_saving_pct,
         }
         for r in recommendations
     ]
     st.dataframe(pd.DataFrame(recs_data), use_container_width=True)
 
-st.subheader("Simulation avant / apres")
+st.subheader("Before / After Simulation")
 actions = [{"estimated_saving_pct": r.estimated_saving_pct} for r in recommendations]
 simulation = simulate_actions(total_energy_mwh, actions)
 
 sim_df = pd.DataFrame(
     [
-        {"Scenario": "Initial", "Energie (MWh/an)": simulation["initial_energy_mwh"]},
+        {"Scenario": "Baseline", "Energy (MWh/year)": simulation["initial_energy_mwh"]},
         {
-            "Scenario": "Apres actions",
-            "Energie (MWh/an)": simulation["remaining_energy_mwh"],
+            "Scenario": "After Actions",
+            "Energy (MWh/year)": simulation["remaining_energy_mwh"],
         },
     ]
 )
 st.bar_chart(sim_df.set_index("Scenario"))
 
 st.write(
-    f"Gain total estime: {simulation['total_savings_mwh']:.1f} MWh/an"
+    f"Estimated total savings: {simulation['total_savings_mwh']:.1f} MWh/year"
     f" ({simulation['total_savings_pct']:.1f}%)"
 )
 if simulation["total_savings_pct"] >= 25:
-    st.success("Objectif -25% CO2 atteignable avec ces actions.")
+    st.success("Target -25% CO2 is achievable with these actions.")
 else:
-    st.info("Objectif -25% CO2 non atteint, ajuster les actions.")
+    st.info("Target -25% CO2 not reached. Adjust the action set.")
