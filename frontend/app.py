@@ -96,12 +96,37 @@ st.markdown(
     .stApp {{
         background: {bg};
     }}
+    body, [data-testid="stAppViewContainer"] {{
+        color: {text};
+    }}
     h1, h2, h3, h4, h5, p, li, label, span, div {{
         color: {text};
     }}
     a {{ color: {muted}; }}
     [data-testid="stMetricValue"] {{ color: {text} !important; text-shadow: 0 2px 6px rgba(0,0,0,0.25); }}
     [data-testid="stMetricLabel"] {{ color: {muted} !important; }}
+    input, textarea, select, button {{
+        background: {"rgba(18, 26, 51, 0.85)" if dark_mode else "rgba(245, 248, 255, 0.95)"} !important;
+        color: {text} !important;
+        border: 1px solid {"rgba(255,255,255,0.12)" if dark_mode else "rgba(20, 30, 60, 0.2)"} !important;
+    }}
+    input:hover, textarea:hover, select:hover, button:hover {{
+        background: {"rgba(22, 34, 68, 0.9)" if dark_mode else "rgba(235, 240, 255, 1)"} !important;
+        color: {text} !important;
+    }}
+    input:focus, textarea:focus, select:focus {{
+        outline: none !important;
+        box-shadow: 0 0 0 2px {"rgba(126, 166, 255, 0.45)" if dark_mode else "rgba(76, 130, 255, 0.35)"} !important;
+    }}
+    [data-baseweb="select"] * {{
+        color: {text} !important;
+    }}
+    [data-baseweb="popover"] {{
+        background: {"rgba(18, 26, 51, 0.98)" if dark_mode else "rgba(248, 251, 255, 0.98)"} !important;
+    }}
+    [data-testid="stRadio"] label {{
+        color: {text} !important;
+    }}
     .section-title {{
         font-size: 18px;
         font-weight: 700;
@@ -145,14 +170,47 @@ st.markdown(
         margin-right: 12px;
         padding: 6px 10px;
         border-radius: 10px;
-        background: rgba(20, 30, 60, 0.6);
-        border: 1px solid rgba(255,255,255,0.08);
-        color: #dbe6ff;
+        background: {"rgba(20, 30, 60, 0.6)" if dark_mode else "rgba(230, 236, 255, 0.9)"};
+        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        color: {text};
         font-size: 12px;
     }}
     .nav a:hover {{
-        background: rgba(52, 75, 140, 0.7);
-        color: #ffffff;
+        background: {"rgba(52, 75, 140, 0.7)" if dark_mode else "rgba(210, 225, 255, 0.9)"};
+        color: {text};
+    }}
+    .dropdown {{
+        position: relative;
+        display: inline-block;
+    }}
+    .dropdown-content {{
+        display: none;
+        position: absolute;
+        min-width: 160px;
+        background: {"rgba(18, 26, 51, 0.98)" if dark_mode else "rgba(248, 251, 255, 0.98)"};
+        border: 1px solid {"rgba(255,255,255,0.12)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        border-radius: 12px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+        padding: 6px;
+        z-index: 1000;
+    }}
+    .dropdown:hover .dropdown-content {{
+        display: block;
+    }}
+    .dropdown-content a {{
+        display: block;
+        padding: 6px 10px;
+        margin: 4px 0;
+        border-radius: 8px;
+        background: {"rgba(20, 30, 60, 0.45)" if dark_mode else "rgba(240, 244, 255, 0.9)"};
+        color: {text};
+        text-decoration: none;
+        font-size: 12px;
+        font-weight: 600;
+    }}
+    .dropdown-content a:hover {{
+        background: {"rgba(52, 75, 140, 0.7)" if dark_mode else "rgba(210, 225, 255, 0.9)"};
+        color: {text};
     }}
     .subtle {{
         opacity: 0.8;
@@ -231,9 +289,9 @@ st.markdown(
         color: {muted};
     }}
     .stSidebar [data-testid="stExpander"] {{
-        background: rgba(18, 26, 51, 0.6);
+        background: {"rgba(18, 26, 51, 0.6)" if dark_mode else "rgba(236, 242, 255, 0.95)"};
         border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.08);
+        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
         padding: 6px;
     }}
     .stSidebar [data-testid="stExpander"] summary {{
@@ -381,6 +439,7 @@ st.markdown(
     .compact .stSidebar label, .compact .stSidebar span, .compact .stSidebar p {{
         font-size: 10px;
     }}
+    {".compact [data-testid='stSidebar'] { width: 72px !important; }" if compact_sidebar else ""}
     </style>
     """,
     unsafe_allow_html=True,
@@ -518,18 +577,21 @@ if page == "Dashboard":
                 GreenDC <span>Audit Console</span>
             </div>
             <div class="nav">
-                <a href="#metrics">KPIs</a>
-                <a href="#recommendations">Actions</a>
-                <a href="#simulation">Simulation</a>
-                <a href="#about">About</a>
-            </div>
-        </div>
-        <div class="topbar" style="margin-top: -6px;">
-            <div class="subtle">Sections</div>
-            <div class="nav">
-                <a href="#metrics">Energy KPIs</a>
-                <a href="#recommendations">AI Plan</a>
-                <a href="#simulation">Impact</a>
+                <div class="dropdown">
+                    <a href="#metrics">KPIs ▾</a>
+                    <div class="dropdown-content">
+                        <a href="#metrics">Energy KPIs</a>
+                        <a href="#recommendations">AI Actions</a>
+                        <a href="#simulation">Impact</a>
+                    </div>
+                </div>
+                <div class="dropdown">
+                    <a href="#about">Platform ▾</a>
+                    <div class="dropdown-content">
+                        <a href="#about">About</a>
+                        <a href="#simulation">Simulation</a>
+                    </div>
+                </div>
             </div>
         </div>
         """,
