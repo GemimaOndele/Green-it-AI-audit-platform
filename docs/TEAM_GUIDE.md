@@ -5,14 +5,14 @@ work safely without breaking the shared branches.
 
 ## 1) Clone and enter the project
 
-```
+```bash
 git clone https://github.com/GemimaOndele/Green-it-AI-audit-platform.git
 cd Green-it-AI-audit-platform
 ```
 
 ## 2) Get all remote branches
 
-```
+```bash
 git fetch --all
 ```
 
@@ -28,7 +28,7 @@ Use the branch assigned to you:
 
 Example:
 
-```
+```bash
 git checkout feature/energy-metrics
 ```
 
@@ -36,7 +36,7 @@ git checkout feature/energy-metrics
 
 Before starting or before a merge request:
 
-```
+```bash
 git checkout dev
 git pull
 git checkout feature/energy-metrics
@@ -45,14 +45,33 @@ git rebase dev
 
 If conflicts happen, resolve them, then:
 
+```bash
+git add .
+git rebase --continue
 ```
+
+## 4.1) Quick clean pull (everyday use)
+
+Use this sequence before you start working:
+
+```bash
+git fetch --all
+git checkout dev
+git pull --rebase
+git checkout feature/energy-metrics
+git pull --rebase
+```
+
+If conflicts appear, resolve them, then:
+
+```bash
 git add .
 git rebase --continue
 ```
 
 ## 5) Push your work
 
-```
+```bash
 git push -u origin feature/energy-metrics
 ```
 
