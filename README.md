@@ -67,6 +67,10 @@ lightweight, modular system that favors proportional computing and transparent l
 3. Enter data center inputs in the sidebar
 4. Review metrics, recommendations, and simulation results
 
+## Team Workflow Guide
+
+See `docs/TEAM_GUIDE.md` for the clone, branch, and PR workflow.
+
 ## Example Case Study
 
 - IT Energy: 780 MWh/year
