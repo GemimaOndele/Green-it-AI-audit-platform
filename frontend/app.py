@@ -19,6 +19,7 @@ st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
 with st.sidebar:
     st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
     dark_mode = st.toggle("Dark mode", value=True)
+    compact_sidebar = st.toggle("Compact sidebar", value=False)
     st.markdown(
         """
         <div class="icon-nav">
@@ -51,7 +52,9 @@ with st.sidebar:
         """,
         unsafe_allow_html=True,
     )
-    with st.expander("Energy Inputs", expanded=True):
+    if compact_sidebar:
+        st.caption("Expand sidebar to edit inputs.")
+    with st.expander("Energy Inputs", expanded=not compact_sidebar):
         it_energy_mwh = st.number_input(
             "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
         )
@@ -61,7 +64,7 @@ with st.sidebar:
         carbon_factor = st.number_input(
             "Carbon Factor (kg CO2/kWh)", min_value=0.0, value=0.30, step=0.01
         )
-    with st.expander("Infrastructure Inputs", expanded=True):
+    with st.expander("Infrastructure Inputs", expanded=not compact_sidebar):
         servers = st.number_input("Number of Servers", min_value=0, value=320, step=10)
         cpu_utilization = st.number_input(
             "Average CPU Utilization (%)", min_value=0.0, max_value=100.0, value=18.0
@@ -69,7 +72,7 @@ with st.sidebar:
         virtualization_level = st.number_input(
             "Virtualization Level (%)", min_value=0.0, max_value=100.0, value=45.0
         )
-    with st.expander("Cooling & Facilities", expanded=True):
+    with st.expander("Cooling & Facilities", expanded=not compact_sidebar):
         cooling_setpoint = st.number_input(
             "Cooling Setpoint (°C)", min_value=10.0, max_value=30.0, value=19.0
         )
@@ -238,7 +241,7 @@ st.markdown(
         font-weight: 600;
     }}
     .stSidebar [role="radiogroup"] label {{
-        color: {text} !important;
+        color: {muted} !important;
         font-weight: 600;
     }}
     .stSidebar [role="radiogroup"] label[data-selected="true"] {{
@@ -372,13 +375,29 @@ st.markdown(
         vertical-align: middle;
         margin-right: 8px;
     }}
+    .compact .stSidebar {{
+        width: 72px !important;
+    }}
+    .compact .stSidebar label, .compact .stSidebar span, .compact .stSidebar p {{
+        font-size: 10px;
+    }}
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-query = st.experimental_get_query_params()
-page_param = query.get("page", ["landing"])[0].lower()
+if compact_sidebar:
+    st.markdown("<div class='compact'></div>", unsafe_allow_html=True)
+
+if hasattr(st, "query_params"):
+    query = st.query_params
+    page_param = query.get("page", "landing")
+    if isinstance(page_param, list):
+        page_param = page_param[0]
+else:
+    query = st.experimental_get_query_params()
+    page_param = query.get("page", ["landing"])[0]
+page_param = page_param.lower()
 if page_param not in {"landing", "dashboard", "about"}:
     page_param = "landing"
 page = page_param.capitalize()
@@ -499,10 +518,18 @@ if page == "Dashboard":
                 GreenDC <span>Audit Console</span>
             </div>
             <div class="nav">
-                <a href="#metrics">Metrics</a>
-                <a href="#recommendations">Recommendations</a>
+                <a href="#metrics">KPIs</a>
+                <a href="#recommendations">Actions</a>
                 <a href="#simulation">Simulation</a>
                 <a href="#about">About</a>
+            </div>
+        </div>
+        <div class="topbar" style="margin-top: -6px;">
+            <div class="subtle">Sections</div>
+            <div class="nav">
+                <a href="#metrics">Energy KPIs</a>
+                <a href="#recommendations">AI Plan</a>
+                <a href="#simulation">Impact</a>
             </div>
         </div>
         """,
