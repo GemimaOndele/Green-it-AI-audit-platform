@@ -22,6 +22,24 @@ st.markdown(
     .stApp {
         background: radial-gradient(140% 140% at 0% 0%, #0f1d3b 0%, #0a1022 55%, #060914 100%);
     }
+    h1, h2, h3, h4, h5, p, li, label, span, div {
+        color: #e9edff;
+    }
+    a { color: #bcd0ff; }
+    [data-testid="stMetricValue"] { color: #ffffff !important; text-shadow: 0 2px 6px rgba(0,0,0,0.45); }
+    [data-testid="stMetricLabel"] { color: #c9d4ff !important; }
+    .section-title {
+        font-size: 18px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        margin: 6px 0 10px 0;
+        color: #eaf0ff;
+        text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+    .subtle {
+        opacity: 0.8;
+        font-size: 13px;
+    }
     .hero {
         background: linear-gradient(145deg, rgba(28,45,94,0.9), rgba(10,16,34,0.95));
         color: #f7f7f7;
@@ -50,15 +68,20 @@ st.markdown(
         display: inline-block;
         padding: 6px 12px;
         border-radius: 999px;
-        background: rgba(140, 170, 255, 0.14);
+        background: rgba(140, 170, 255, 0.2);
         border: 1px solid rgba(140, 170, 255, 0.35);
         color: #cfd8ff;
         font-size: 12px;
         letter-spacing: 0.04em;
         margin-right: 8px;
     }
+    .badge-solid {
+        background: rgba(76, 214, 180, 0.18);
+        border: 1px solid rgba(76, 214, 180, 0.45);
+        color: #c9fff2;
+    }
     .glass {
-        background: rgba(18, 26, 51, 0.55);
+        background: rgba(26, 36, 72, 0.65);
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.12);
         box-shadow: 0 12px 24px rgba(0,0,0,0.25);
@@ -66,15 +89,57 @@ st.markdown(
         padding: 16px 18px;
     }
     .metric-card {
-        background: linear-gradient(180deg, rgba(22,32,66,0.92) 0%, rgba(10,16,34,0.95) 100%);
+        background: linear-gradient(180deg, rgba(32,48,96,0.98) 0%, rgba(16,24,48,0.98) 100%);
         color: #eef1ff;
         padding: 16px 18px;
         border-radius: 14px;
-        box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+        box-shadow: 0 12px 28px rgba(0,0,0,0.45);
         border: 1px solid rgba(255,255,255,0.12);
     }
-    .metric-card h3 { margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #9fb2ff; }
-    .metric-card .value { font-size: 26px; font-weight: 700; }
+    .metric-card h3 { margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #c9d4ff; }
+    .metric-card .value { font-size: 28px; font-weight: 800; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }
+    .stSidebar > div:first-child {
+        background: linear-gradient(180deg, rgba(14,21,42,0.98), rgba(9,14,29,0.98));
+        border-right: 1px solid rgba(255,255,255,0.08);
+    }
+    .stSidebar label, .stSidebar span, .stSidebar p {
+        color: #e9edff !important;
+    }
+    .stDataFrame, .stTable {
+        background: rgba(20, 30, 60, 0.35);
+        border-radius: 12px;
+        padding: 6px;
+    }
+    .stDataFrame div[role="grid"] {
+        background: rgba(16, 24, 48, 0.9);
+        color: #e9edff;
+    }
+    .stDataFrame div[role="grid"] * {
+        color: #e9edff !important;
+    }
+    .stTabs [data-baseweb="tab"] {
+        color: #c9d4ff;
+        background: rgba(20, 30, 60, 0.5);
+        border-radius: 12px;
+        margin-right: 6px;
+        padding: 8px 14px;
+        border: 1px solid rgba(255,255,255,0.08);
+    }
+    .stTabs [aria-selected="true"] {
+        background: rgba(52, 75, 140, 0.7);
+        color: #ffffff;
+        border: 1px solid rgba(255,255,255,0.2);
+        box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+    }
+    .footer {
+        margin-top: 20px;
+        padding: 12px 16px;
+        border-radius: 12px;
+        background: rgba(12, 18, 38, 0.7);
+        border: 1px solid rgba(255,255,255,0.08);
+        font-size: 12px;
+        color: #b7c3ff;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -125,7 +190,7 @@ with dashboard_tab:
     metrics_col, recs_col = st.columns([1, 1])
 
     with metrics_col:
-        st.subheader("Key Metrics")
+        st.markdown("<div class='section-title'>Key Metrics</div>", unsafe_allow_html=True)
         pue = calculate_pue(it_energy_mwh, total_energy_mwh)
         dcie = calculate_dcie(it_energy_mwh, total_energy_mwh)
         co2_tonnes = calculate_co2_tonnes(total_energy_mwh, carbon_factor)
@@ -152,9 +217,13 @@ with dashboard_tab:
             f" | Cooling Setpoint: <b>{cooling_setpoint:.1f} °C</b></div>",
             unsafe_allow_html=True,
         )
+        st.markdown(
+            "<div class='subtle'>Tip: Improve DCiE by reducing non-IT energy overheads.</div>",
+            unsafe_allow_html=True,
+        )
 
     with recs_col:
-        st.subheader("AI Recommendations")
+        st.markdown("<div class='section-title'>AI Recommendations</div>", unsafe_allow_html=True)
         recommendations = build_recommendations(
             cpu_utilization_pct=cpu_utilization,
             cooling_setpoint_c=cooling_setpoint,
@@ -169,9 +238,30 @@ with dashboard_tab:
             }
             for r in recommendations
         ]
-        st.dataframe(pd.DataFrame(recs_data), use_container_width=True)
+        recs_df = pd.DataFrame(recs_data)
+        recs_style = (
+            recs_df.style.set_properties(
+                **{
+                    "background-color": "rgba(15, 25, 50, 0.85)",
+                    "color": "#e9edff",
+                    "border-color": "rgba(255,255,255,0.06)",
+                }
+            )
+            .set_table_styles(
+                [
+                    {
+                        "selector": "th",
+                        "props": [
+                            ("background-color", "rgba(22, 36, 72, 0.95)"),
+                            ("color", "#cfe0ff"),
+                        ],
+                    }
+                ]
+            )
+        )
+        st.dataframe(recs_style, use_container_width=True, hide_index=True)
 
-    st.subheader("Before / After Simulation")
+    st.markdown("<div class='section-title'>Before / After Simulation</div>", unsafe_allow_html=True)
     actions = [{"estimated_saving_pct": r.estimated_saving_pct} for r in recommendations]
     simulation = simulate_actions(total_energy_mwh, actions)
 
@@ -195,9 +285,13 @@ with dashboard_tab:
         st.success("Target -25% CO2 is achievable with these actions.")
     else:
         st.info("Target -25% CO2 not reached. Adjust the action set.")
+    st.markdown(
+        "<div class='footer'>GreenDC Audit Platform • Responsible by design • © GreenAI Systems</div>",
+        unsafe_allow_html=True,
+    )
 
 with about_tab:
-    st.subheader("About the Platform")
+    st.markdown("<div class='section-title'>About the Platform</div>", unsafe_allow_html=True)
     st.markdown(
         """
         <div class="glass">
@@ -220,6 +314,19 @@ with about_tab:
                 <li>Review metrics and AI recommendations.</li>
                 <li>Validate the -25% target with the simulation panel.</li>
             </ol>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("")
+    st.markdown(
+        """
+        <div class="glass">
+            <b>Modules:</b> frontend, energy_metrics, ai_recommendation, simulation, case_study.
+            <br><br>
+            <span class="badge badge-solid">Green IT</span>
+            <span class="badge badge-solid">Green Coding</span>
+            <span class="badge badge-solid">Proportional Computing</span>
         </div>
         """,
         unsafe_allow_html=True,
