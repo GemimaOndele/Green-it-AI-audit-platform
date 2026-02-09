@@ -1,0 +1,10 @@
+{
+  "it_energy_mwh": 780,
+  "total_energy_mwh": 1300,
+  "carbon_factor_kg_per_kwh": 0.30,
+  "servers": 320,
+  "cpu_utilization_pct": 18,
+  "cooling_setpoint_c": 19,
+  "has_aisle_containment": false,
+  "virtualization_level_pct": 45
+}
