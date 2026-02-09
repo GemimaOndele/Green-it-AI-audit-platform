@@ -135,6 +135,23 @@ st.markdown(
     .stSidebar label, .stSidebar span, .stSidebar p {
         color: #e9edff !important;
     }
+    .sidebar-title {
+        font-weight: 800;
+        font-size: 14px;
+        letter-spacing: 0.08em;
+        margin-bottom: 8px;
+        color: #cfe0ff;
+    }
+    .stSidebar [data-testid="stExpander"] {
+        background: rgba(18, 26, 51, 0.6);
+        border-radius: 12px;
+        border: 1px solid rgba(255,255,255,0.08);
+        padding: 6px;
+    }
+    .stSidebar [data-testid="stExpander"] summary {
+        color: #e9edff;
+        font-weight: 600;
+    }
     .stDataFrame, .stTable {
         background: rgba(20, 30, 60, 0.35);
         border-radius: 12px;
@@ -198,53 +215,134 @@ st.markdown(
         vertical-align: middle;
         margin-right: 6px;
     }
+    .action-icon {
+        vertical-align: middle;
+        margin-right: 8px;
+    }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.markdown(
-    """
-    <div class="hero">
-        <h1>GreenDC Audit Platform</h1>
-        <p>AI-assisted energy & carbon audit for industrial data centers — modern, 3D-inspired, and Green IT compliant.</p>
-        <div style="margin-top: 12px;">
-            <span class="badge">Green IT</span>
-            <span class="badge">Green Coding</span>
-            <span class="badge">ISO 50001 Ready</span>
-            <span class="badge">-25% CO2 Target</span>
-        </div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
-
-dashboard_tab, about_tab = st.tabs(["Dashboard", "About"])
-
 with st.sidebar:
-    st.header("Data Center Inputs")
-    it_energy_mwh = st.number_input(
-        "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
-    )
-    total_energy_mwh = st.number_input(
-        "Total Energy (MWh/year)", min_value=0.0, value=1300.0, step=10.0
-    )
-    carbon_factor = st.number_input(
-        "Carbon Factor (kg CO2/kWh)", min_value=0.0, value=0.30, step=0.01
-    )
-    servers = st.number_input("Number of Servers", min_value=0, value=320, step=10)
-    cpu_utilization = st.number_input(
-        "Average CPU Utilization (%)", min_value=0.0, max_value=100.0, value=18.0
-    )
-    cooling_setpoint = st.number_input(
-        "Cooling Setpoint (°C)", min_value=10.0, max_value=30.0, value=19.0
-    )
-    aisle_containment = st.checkbox("Hot/Cold Aisle Containment in place", value=False)
-    virtualization_level = st.number_input(
-        "Virtualization Level (%)", min_value=0.0, max_value=100.0, value=45.0
+    st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
+    page = st.radio("Navigation", ["Landing", "Dashboard", "About"])
+    with st.expander("Energy Inputs", expanded=True):
+        it_energy_mwh = st.number_input(
+            "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
+        )
+        total_energy_mwh = st.number_input(
+            "Total Energy (MWh/year)", min_value=0.0, value=1300.0, step=10.0
+        )
+        carbon_factor = st.number_input(
+            "Carbon Factor (kg CO2/kWh)", min_value=0.0, value=0.30, step=0.01
+        )
+    with st.expander("Infrastructure Inputs", expanded=True):
+        servers = st.number_input("Number of Servers", min_value=0, value=320, step=10)
+        cpu_utilization = st.number_input(
+            "Average CPU Utilization (%)", min_value=0.0, max_value=100.0, value=18.0
+        )
+        virtualization_level = st.number_input(
+            "Virtualization Level (%)", min_value=0.0, max_value=100.0, value=45.0
+        )
+    with st.expander("Cooling & Facilities", expanded=True):
+        cooling_setpoint = st.number_input(
+            "Cooling Setpoint (°C)", min_value=10.0, max_value=30.0, value=19.0
+        )
+        aisle_containment = st.checkbox("Hot/Cold Aisle Containment in place", value=False)
+
+
+def action_icon_svg(action_title: str) -> str:
+    title = action_title.lower()
+    if "consolidation" in title:
+        return (
+            "<svg class='action-icon' width='16' height='16' viewBox='0 0 24 24' fill='none' "
+            "xmlns='http://www.w3.org/2000/svg'><path d='M4 4h16v6H4z' fill='#cfe0ff'/>"
+            "<path d='M6 13h12v7H6z' fill='#9fb2ff'/></svg>"
+        )
+    if "cooling" in title:
+        return (
+            "<svg class='action-icon' width='16' height='16' viewBox='0 0 24 24' fill='none' "
+            "xmlns='http://www.w3.org/2000/svg'><path d='M12 3v18' stroke='#cfe0ff' stroke-width='2'/>"
+            "<path d='M8 7h8M8 12h8M8 17h8' stroke='#cfe0ff' stroke-width='2'/></svg>"
+        )
+    if "aisle" in title:
+        return (
+            "<svg class='action-icon' width='16' height='16' viewBox='0 0 24 24' fill='none' "
+            "xmlns='http://www.w3.org/2000/svg'><path d='M4 4h6v16H4z' fill='#cfe0ff'/>"
+            "<path d='M14 4h6v16h-6z' fill='#9fb2ff'/></svg>"
+        )
+    if "virtualization" in title:
+        return (
+            "<svg class='action-icon' width='16' height='16' viewBox='0 0 24 24' fill='none' "
+            "xmlns='http://www.w3.org/2000/svg'><rect x='4' y='4' width='7' height='7' fill='#cfe0ff'/>"
+            "<rect x='13' y='4' width='7' height='7' fill='#9fb2ff'/>"
+            "<rect x='4' y='13' width='7' height='7' fill='#9fb2ff'/></svg>"
+        )
+    return (
+        "<svg class='action-icon' width='16' height='16' viewBox='0 0 24 24' fill='none' "
+        "xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='8' stroke='#cfe0ff' stroke-width='2'/></svg>"
     )
 
-with dashboard_tab:
+
+if page == "Landing":
+    st.markdown(
+        """
+        <div class="hero">
+            <h1>GreenDC Audit Platform</h1>
+            <p>AI-assisted energy & carbon audit for industrial data centers — modern, 3D-inspired, and Green IT compliant.</p>
+            <div style="margin-top: 12px;">
+                <span class="badge">Green IT</span>
+                <span class="badge">Green Coding</span>
+                <span class="badge">ISO 50001 Ready</span>
+                <span class="badge">-25% CO2 Target</span>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    left, right = st.columns([1.2, 1])
+    with left:
+        st.markdown("<div class='section-title'>Why GreenDC?</div>", unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div class="glass">
+                A practical platform to measure, explain, and validate energy and carbon reductions.
+                Built for industrial data centers with realistic constraints.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown("")
+        st.markdown(
+            """
+            <div class="glass">
+                <b>Core pillars:</b>
+                <ul>
+                    <li>Measurable KPIs (PUE, DCiE, CO2)</li>
+                    <li>Actionable recommendations</li>
+                    <li>Scenario validation to reach -25%</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+    with right:
+        st.markdown("<div class='section-title'>Platform Snapshot</div>", unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div class="glass">
+                <b>Inputs:</b> Energy, cooling, utilization, carbon factor<br><br>
+                <b>Outputs:</b> KPIs, AI recommendations, savings simulation<br><br>
+                <span class="badge badge-solid">Audit-ready</span>
+                <span class="badge badge-solid">Explainable</span>
+                <span class="badge badge-solid">Lightweight</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+if page == "Dashboard":
     st.markdown(
         """
         <div class="topbar">
@@ -325,7 +423,7 @@ with dashboard_tab:
         for rec in recs_data:
             st.markdown(
                 f"<div class='rec-card'>"
-                f"<div class='rec-title'>{rec['Action']}</div>"
+                f"<div class='rec-title'>{action_icon_svg(rec['Action'])}{rec['Action']}</div>"
                 f"<div class='subtle'>{rec['Why it helps']}</div>"
                 f"<div class='rec-meta'>Estimated Saving: {rec['Estimated Saving (%)']}%</div>"
                 f"</div>",
@@ -361,7 +459,7 @@ with dashboard_tab:
         unsafe_allow_html=True,
     )
 
-with about_tab:
+if page == "About":
     st.markdown("<div id='about' class='section-title'>About the Platform</div>", unsafe_allow_html=True)
     st.markdown(
         """
