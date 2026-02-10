@@ -84,15 +84,22 @@ with st.sidebar:
         aisle_containment = st.checkbox("Hot/Cold Aisle Containment in place", value=False)
 
 theme = "dark" if dark_mode else "light"
-bg = (
-    "radial-gradient(140% 140% at 0% 0%, #0f1d3b 0%, #0a1022 55%, #060914 100%)"
-    if dark_mode
-    else "radial-gradient(120% 120% at 0% 0%, #dfe7f3 0%, #e7eef9 60%, #eef3fb 100%)"
-)
-text = "#e9edff" if dark_mode else "#1a2440"
-muted = "#c9d4ff" if dark_mode else "#41527a"
-panel = "rgba(18, 26, 51, 0.85)" if dark_mode else "rgba(226, 234, 247, 0.95)"
-panel_border = "rgba(255,255,255,0.12)" if dark_mode else "rgba(20, 30, 60, 0.18)"
+if dark_mode:
+    bg = "radial-gradient(140% 140% at 0% 0%, #0f1d3b 0%, #0a1022 55%, #060914 100%)"
+    text = "#e9edff"
+    muted = "#c9d4ff"
+    panel = "rgba(18, 26, 51, 0.92)"
+    panel_border = "rgba(255,255,255,0.12)"
+    card_bg = "linear-gradient(180deg, rgba(24, 36, 72, 0.98) 0%, rgba(12, 20, 40, 0.98) 100%)"
+    hover_bg = "rgba(28, 40, 78, 0.95)"
+else:
+    bg = "radial-gradient(120% 120% at 0% 0%, #e6edf7 0%, #edf2fa 60%, #f4f7fb 100%)"
+    text = "#1b2233"
+    muted = "#394a6b"
+    panel = "rgba(231, 237, 247, 0.98)"
+    panel_border = "rgba(27, 34, 51, 0.12)"
+    card_bg = "linear-gradient(180deg, rgba(226, 232, 244, 0.98) 0%, rgba(216, 224, 238, 0.98) 100%)"
+    hover_bg = "rgba(210, 220, 238, 0.95)"
 
 st.markdown(
     f"""
@@ -118,7 +125,7 @@ st.markdown(
         border: 1px solid {panel_border} !important;
     }}
     input:hover, textarea:hover, select:hover, button:hover {{
-        background: {"rgba(22, 34, 68, 0.9)" if dark_mode else "rgba(235, 240, 255, 1)"} !important;
+        background: {hover_bg} !important;
         color: {text} !important;
     }}
     input:focus, textarea:focus, select:focus {{
@@ -146,9 +153,9 @@ st.markdown(
         position: sticky;
         top: 0;
         z-index: 999;
-        background: rgba(10, 16, 34, 0.75);
+        background: {panel};
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.08);
+        border: 1px solid {panel_border};
         border-radius: 14px;
         padding: 10px 14px;
         margin: 6px 0 16px 0;
@@ -183,7 +190,7 @@ st.markdown(
         font-size: 12px;
     }}
     .nav a:hover {{
-        background: {panel};
+        background: {hover_bg};
         color: {text};
     }}
     .dropdown {{
@@ -223,7 +230,7 @@ st.markdown(
         font-weight: 600;
     }}
     .dropdown-content a:hover {{
-        background: {panel};
+        background: {hover_bg};
         color: {text};
     }}
     .subtle {{
@@ -231,7 +238,7 @@ st.markdown(
         font-size: 13px;
     }}
     .hero {{
-        background: linear-gradient(145deg, rgba(28,45,94,0.9), rgba(10,16,34,0.95));
+        background: {card_bg};
         color: #f7f7f7;
         padding: 28px 32px;
         border-radius: 16px;
@@ -258,9 +265,9 @@ st.markdown(
         display: inline-block;
         padding: 6px 12px;
         border-radius: 999px;
-        background: rgba(140, 170, 255, 0.2);
-        border: 1px solid rgba(140, 170, 255, 0.35);
-        color: #cfd8ff;
+        background: {panel};
+        border: 1px solid {panel_border};
+        color: {text};
         font-size: 12px;
         letter-spacing: 0.04em;
         margin-right: 8px;
@@ -271,7 +278,7 @@ st.markdown(
         color: #c9fff2;
     }}
     .glass {{
-        background: rgba(26, 36, 72, 0.65);
+        background: {panel};
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.12);
         box-shadow: 0 12px 24px rgba(0,0,0,0.25);
@@ -279,17 +286,17 @@ st.markdown(
         padding: 16px 18px;
     }}
     .metric-card {{
-        background: linear-gradient(180deg, rgba(32,48,96,0.98) 0%, rgba(16,24,48,0.98) 100%);
-        color: #eef1ff;
+        background: {card_bg};
+        color: {text};
         padding: 16px 18px;
         border-radius: 14px;
         box-shadow: 0 12px 28px rgba(0,0,0,0.45);
         border: 1px solid rgba(255,255,255,0.12);
     }}
-    .metric-card h3 {{ margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #c9d4ff; }}
-    .metric-card .value {{ font-size: 28px; font-weight: 800; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }}
+    .metric-card h3 {{ margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: {muted}; }}
+    .metric-card .value {{ font-size: 28px; font-weight: 800; color: {text}; text-shadow: 0 2px 6px rgba(0,0,0,0.25); }}
     .stSidebar > div:first-child {{
-        background: {"linear-gradient(180deg, rgba(14,21,42,0.98), rgba(9,14,29,0.98))" if dark_mode else "linear-gradient(180deg, rgba(222,230,246,0.98), rgba(214,224,242,0.98))"};
+        background: {panel};
         border-right: 1px solid {panel_border};
     }}
     .stSidebar label, .stSidebar span, .stSidebar p {{
@@ -369,7 +376,7 @@ st.markdown(
         font-weight: 600;
     }}
     .nav-list a:hover {{
-        background: {panel};
+        background: {hover_bg};
         color: {text};
     }}
     .stDataFrame, .stTable {{
@@ -402,22 +409,22 @@ st.markdown(
         margin-top: 20px;
         padding: 12px 16px;
         border-radius: 12px;
-        background: rgba(12, 18, 38, 0.7);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: {panel};
+        border: 1px solid {panel_border};
         font-size: 12px;
-        color: #b7c3ff;
+        color: {muted};
     }}
     .section {{
-        background: rgba(14, 22, 45, 0.55);
-        border: 1px solid rgba(255,255,255,0.08);
+        background: {panel};
+        border: 1px solid {panel_border};
         border-radius: 16px;
         padding: 18px;
         margin-bottom: 16px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.35);
     }}
     .rec-card {{
-        background: linear-gradient(180deg, rgba(24, 36, 72, 0.95) 0%, rgba(12, 20, 40, 0.98) 100%);
-        border: 1px solid rgba(255,255,255,0.12);
+        background: {card_bg};
+        border: 1px solid {panel_border};
         border-radius: 14px;
         padding: 14px 16px;
         margin-bottom: 10px;
@@ -433,9 +440,9 @@ st.markdown(
         display: inline-block;
         padding: 4px 10px;
         border-radius: 999px;
-        background: rgba(120, 210, 255, 0.15);
-        border: 1px solid rgba(120, 210, 255, 0.35);
-        color: #d9f0ff;
+        background: {panel};
+        border: 1px solid {panel_border};
+        color: {text};
         font-size: 11px;
         margin-top: 8px;
     }}
@@ -621,7 +628,7 @@ if page == "Dashboard":
                         <div class="dropdown">
                             <a href="#about">Team ▸</a>
                             <div class="dropdown-content">
-                                <a href="#about">GreenAI Systems</a>
+                                <a href="#about">GreenAI Systems 🌱</a>
                             </div>
                         </div>
                     </div>
