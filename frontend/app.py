@@ -116,10 +116,14 @@ st.markdown(
         color: {text};
     }}
     [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"] {{
-        background: transparent !important;
+        background: {panel} !important;
+        border-bottom: 1px solid {panel_border} !important;
     }}
     [data-testid="stAppViewContainer"], .block-container {{
         background: transparent !important;
+    }}
+    [data-testid="stSidebar"] {{
+        background: {panel} !important;
     }}
     h1, h2, h3, h4, h5, p, li, label, span, div {{
         color: {text};
@@ -161,6 +165,14 @@ st.markdown(
     [data-baseweb="popover"] * {{
         color: {text} !important;
         background-color: transparent !important;
+    }}
+    [data-baseweb="tooltip"], [data-baseweb="modal"], [data-testid="stModal"] {{
+        background: {panel} !important;
+        color: {text} !important;
+        border: 1px solid {panel_border} !important;
+    }}
+    [data-baseweb="layer"] {{
+        background: transparent !important;
     }}
     [data-baseweb="menu"] {{
         background: {panel} !important;
