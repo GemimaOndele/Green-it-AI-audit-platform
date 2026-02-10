@@ -16,6 +16,24 @@ from simulation import simulate_actions
 
 st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
 
+st.markdown(
+    """
+    <style>
+    html, body, [data-testid="stAppViewContainer"], .block-container {
+        background: #0b111f !important;
+    }
+    [data-testid="stSpinner"] {
+        background: transparent !important;
+        color: #e5ecff !important;
+    }
+    [data-testid="stSpinner"] * {
+        color: #e5ecff !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 with st.sidebar:
     st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
     if "compact_sidebar" not in st.session_state:
