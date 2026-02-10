@@ -19,7 +19,7 @@ st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
 st.markdown(
     """
     <style>
-    html, body, [data-testid="stAppViewContainer"], .block-container {
+    html, body, #root, [data-testid="stAppViewContainer"], .block-container, main {
         background: #0b111f !important;
     }
     [data-testid="stSpinner"] {
@@ -654,7 +654,7 @@ if page == "Landing":
     st.markdown(
         """
         <div class="hero">
-            <h1>GreenDC Audit Platform</h1>
+            <h1>🌿⚡ GreenDC Audit Platform</h1>
             <p>AI-assisted energy & carbon audit for industrial data centers — modern, 3D-inspired, and Green IT compliant.</p>
             <div style="margin-top: 12px;">
                 <span class="badge">Green IT</span>
@@ -662,6 +662,7 @@ if page == "Landing":
                 <span class="badge">ISO 50001 Ready</span>
                 <span class="badge">-25% CO2 Target</span>
             </div>
+            <div style="margin-top: 10px; color:#7ee6b4; font-weight:700;">🍃 GreenAI Systems</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -736,7 +737,7 @@ if page == "Dashboard":
                   <circle cx="5" cy="18" r="2" fill="url(#node)"/>
                   <path d="M7 18h10" stroke="#6fd3ff" stroke-width="1.5"/>
                 </svg>
-                🌿⚡ GreenDC <span>Audit Console</span>
+                🌿⚡ <span style="color:#7ee6b4;">GreenDC</span> <span>Audit Console</span>
             </div>
             <div class="nav">
                 <div class="dropdown">
