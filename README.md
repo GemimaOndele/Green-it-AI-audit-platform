@@ -10,11 +10,12 @@ GreenDC Audit Platform computes core Green IT metrics (PUE, DCiE, CO2) and build
 actionable optimization plans to reach a **-25% CO2 reduction target**. It is a
 lightweight, modular system that favors proportional computing and transparent logic.
 
-## ⭐ Branch Focus (main)
+## 🧪 Branch Focus (dev)
 
-- **Branch**: `main`
-- **Owner**: Gemima Ondele Pourou (Maintainer)
-- **Role**: Stable demo branch that presents the full platform experience and full setup guide.
+- **Branch**: `dev`
+- **Owner**: Gemima Ondele Pourou (Platform Architect & Frontend/Integration)
+- **Role**: Integration branch for all feature work before the stable demo on `main`.
+- **Note**: Full setup and OS-specific environment guides live on `main`.
 
 ## ✨ Core Features
 
@@ -87,60 +88,14 @@ lightweight, modular system that favors proportional computing and transparent l
 5. Review metrics, recommendations, and simulation results
 6. Use Document QA for workload benchmark analysis
 
-## 🧰 Environment Setup (Windows / macOS / Linux)
+## 🧰 Environment Setup
 
-### Windows (PowerShell)
-
-1. Create and activate a virtual environment
-   - `python -m venv .greenit`
-   - `.\\.greenit\\Scripts\\Activate.ps1`
-2. Install dependencies
-   - `pip install -r requirements.txt`
-3. Run the app
-   - `streamlit run frontend/app.py`
-
-### macOS / Linux (bash)
-
-1. Create and activate a virtual environment
-   - `python3 -m venv .greenit`
-   - `source .greenit/bin/activate`
-2. Install dependencies
-   - `pip install -r requirements.txt`
-3. Run the app
-   - `streamlit run frontend/app.py`
-
-### Environment Variables (optional)
-
-Create `.greenit/.env` and add:
-- `HF_TOKEN=your_huggingface_token`
-- `OPENAI_API_KEY=` (not used in offline mode)
+See the `main` branch README for full Windows/macOS/Linux setup.
 
 ## 🤝 Team Workflow Guide
 
 See `docs/TEAM_GUIDE.md` for the clone, branch, and PR workflow.
 
-## 🏭 Example Case Study
+## 🔗 More Details
 
-- IT Energy: 780 MWh/year
-- Total Energy: 1300 MWh/year
-- Carbon factor: 0.30 kg CO2/kWh
-- PUE: ~1.67
-- CPU utilization: 18%
-- Cooling setpoint: 19 C
-- No aisle containment
-
-Target: **-25% CO2 reduction within 12 months**.
-
-## 🎯 Why This Project Matters
-
-- Based on course indicators and audit methodology
-- Realistic industrial context and constraints
-- Quantified improvement plan with clear metrics
-- AI used as decision support, not as a gimmick
-
-## 🗺️ Roadmap (Short)
-
-- Integrate richer datasets and CSV import
-- Refine simulation with energy assumptions
-- Improve dashboard visuals and storytelling
-- Prepare demo scenario and final report
+Full project description, case study, and roadmap are documented on `main`.
