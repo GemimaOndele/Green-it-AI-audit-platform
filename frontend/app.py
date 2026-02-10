@@ -20,7 +20,8 @@ with st.sidebar:
     st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
     if "compact_sidebar" not in st.session_state:
         st.session_state.compact_sidebar = False
-    dark_mode = st.toggle("Dark mode", value=True)
+    dark_mode = True
+    st.caption("Theme: Dark (locked)")
     compact_sidebar = st.toggle("Compact sidebar", value=st.session_state.compact_sidebar)
     if st.button("Toggle sidebar width"):
         st.session_state.compact_sidebar = not st.session_state.compact_sidebar
