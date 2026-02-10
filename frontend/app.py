@@ -17,6 +17,9 @@ from simulation import simulate_actions
 
 st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
 load_dotenv()
+load_dotenv(os.path.join(os.getcwd(), ".greenit", ".env"))
+
+
 
 st.markdown(
     """
@@ -89,11 +92,23 @@ with st.sidebar:
         st.session_state.assistant_visible = True
     if st.button("Show AI Assistant"):
         st.session_state.assistant_visible = True
+    if "assistant_connected" not in st.session_state:
+        st.session_state.assistant_connected = False
     if use_online_ai and api_key_input:
         if st.button("Test OpenAI Key"):
             test_context = {"pue": 1.5, "dcie": 66.7, "co2_tonnes": 300.0}
             test_reply = ai_assistant_reply_online("Test connection for Green IT audit.", test_context, api_key_input)
-            st.success("API test OK." if "error" not in test_reply.lower() else test_reply)
+            if "insufficient_quota" in test_reply.lower():
+                st.session_state.assistant_connected = False
+                st.warning("API key valid, but quota is exceeded.")
+            elif "error" in test_reply.lower():
+                st.session_state.assistant_connected = False
+                st.error(test_reply)
+            else:
+                st.session_state.assistant_connected = True
+                st.success("API test OK.")
+    if st.session_state.assistant_connected:
+        st.markdown("<div class='menu-item'><span>Connected</span><span class='menu-badge'>OK</span></div>", unsafe_allow_html=True)
     with st.expander("Energy Inputs", expanded=not compact_sidebar):
         it_energy_mwh = st.number_input(
             "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
