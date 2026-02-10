@@ -3,6 +3,7 @@ import sys
 
 import pandas as pd
 import streamlit as st
+from dotenv import load_dotenv
 
 # Ensure project root is on PYTHONPATH when running via Streamlit.
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -15,6 +16,7 @@ from simulation import simulate_actions
 
 
 st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
+load_dotenv()
 
 st.markdown(
     """
@@ -80,6 +82,7 @@ with st.sidebar:
         st.caption("Expand sidebar to edit inputs.")
     st.markdown("<div class='menu-item'><span>AI Assistant</span><span class='menu-badge'>NEW</span></div>", unsafe_allow_html=True)
     use_online_ai = st.toggle("Use Online AI (OpenAI)", value=False)
+    simulate_web = st.toggle("Simulate Web Search (offline)", value=False)
     api_key_input = st.text_input("OpenAI API Key", type="password")
     with st.expander("Energy Inputs", expanded=not compact_sidebar):
         it_energy_mwh = st.number_input(
@@ -726,7 +729,7 @@ def ai_assistant_reply_online(question: str, context: dict, api_key: str) -> str
         "You are a Green IT audit assistant for industrial data centers. "
         "Answer only within the scope of energy audits, PUE/DCiE/CO2, "
         "cooling optimization, virtualization, consolidation, and measurable action plans. "
-        "Do not claim to browse the web."
+        "Do not claim to browse the web. If asked for web sources, explain no web browsing."
     )
     user = (
         "User question:\n"
@@ -1001,7 +1004,10 @@ if page == "Dashboard":
                 reply = ai_assistant_reply_online(question, context, api_key)
         else:
             reply = ai_assistant_reply(question, context)
+        if simulate_web:
+            reply += "\n\nSimulated web search: This is a mock summary based on best practices."
         st.markdown(f"<div class='section'>{reply}</div>", unsafe_allow_html=True)
+    st.caption("No web browsing. Online mode uses OpenAI API only.")
 
 if page == "About":
     st.markdown("<div id='about' class='section-title'>About the Platform</div>", unsafe_allow_html=True)
