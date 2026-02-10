@@ -19,6 +19,36 @@ st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
 load_dotenv()
 load_dotenv(os.path.join(os.getcwd(), ".greenit", ".env"))
 
+def ai_assistant_reply_online(question: str, context: dict, api_key: str) -> str:
+    try:
+        from openai import OpenAI
+    except Exception:
+        return "OpenAI package is not installed. Please run: pip install -r requirements.txt"
+
+    client = OpenAI(api_key=api_key)
+    system = (
+        "You are a Green IT audit assistant for industrial data centers. "
+        "Answer only within the scope of energy audits, PUE/DCiE/CO2, "
+        "cooling optimization, virtualization, consolidation, and measurable action plans. "
+        "Do not claim to browse the web. If asked for web sources, explain no web browsing."
+    )
+    user = (
+        "User question:\n"
+        f"{question}\n\n"
+        "Audit context (use this data):\n"
+        f"{context}\n\n"
+        "Return a concise improvement plan and reasoning."
+    )
+    try:
+        response = client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+            temperature=0.2,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as exc:
+        return f"Online assistant error: {exc}"
+
 
 
 st.markdown(
@@ -745,37 +775,6 @@ def ai_assistant_reply(question: str, context: dict) -> str:
         "and only uses the platform context."
     )
     return f"{intro}\n\n{plan}\n\n{note}"
-
-
-def ai_assistant_reply_online(question: str, context: dict, api_key: str) -> str:
-    try:
-        from openai import OpenAI
-    except Exception:
-        return "OpenAI package is not installed. Please run: pip install -r requirements.txt"
-
-    client = OpenAI(api_key=api_key)
-    system = (
-        "You are a Green IT audit assistant for industrial data centers. "
-        "Answer only within the scope of energy audits, PUE/DCiE/CO2, "
-        "cooling optimization, virtualization, consolidation, and measurable action plans. "
-        "Do not claim to browse the web. If asked for web sources, explain no web browsing."
-    )
-    user = (
-        "User question:\n"
-        f"{question}\n\n"
-        "Audit context (use this data):\n"
-        f"{context}\n\n"
-        "Return a concise improvement plan and reasoning."
-    )
-    try:
-        response = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-            temperature=0.2,
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as exc:
-        return f"Online assistant error: {exc}"
 
 
 if page == "Landing":
