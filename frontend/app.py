@@ -143,8 +143,33 @@ st.markdown(
     [data-baseweb="select"] * {{
         color: {text} !important;
     }}
+    [data-baseweb="input"] input {{
+        background: {panel} !important;
+        color: {text} !important;
+    }}
+    [data-baseweb="select"] div {{
+        background: {panel} !important;
+        color: {text} !important;
+    }}
     [data-baseweb="popover"] {{
         background: {panel} !important;
+    }}
+    [data-testid="stAppMenuPopover"], [data-testid="stPopoverBody"] {{
+        background: {panel} !important;
+        color: {text} !important;
+        border: 1px solid {panel_border} !important;
+    }}
+    [data-testid="stAppMenuPopover"] * {{
+        color: {text} !important;
+        background: transparent !important;
+    }}
+    [data-testid="stAppMenuPopover"] a:hover {{
+        background: {hover_bg} !important;
+    }}
+    [data-testid="stAppToolbar"] button {{
+        background: {panel} !important;
+        color: {text} !important;
+        border: 1px solid {panel_border} !important;
     }}
     [data-testid="stToggle"] div {{
         background: {panel} !important;
@@ -329,6 +354,14 @@ st.markdown(
         border-radius: 12px;
         border: 1px solid {panel_border};
         padding: 6px;
+    }}
+    .stSidebar [data-testid="stExpander"] summary {{
+        background: {panel} !important;
+        color: {text} !important;
+        border-radius: 10px;
+    }}
+    .stSidebar [data-testid="stExpander"] summary:hover {{
+        background: {hover_bg} !important;
     }}
     .stSidebar [data-testid="stExpander"] summary {{
         color: #e9edff;
