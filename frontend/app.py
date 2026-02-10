@@ -163,6 +163,22 @@ st.markdown(
         color: {text} !important;
         background: transparent !important;
     }}
+    [data-testid="stAppMenuPopover"] div[role="menuitem"] {{
+        background: {panel} !important;
+        color: {text} !important;
+    }}
+    [data-testid="stAppMenuPopover"] div[role="menuitem"]:hover {{
+        background: {hover_bg} !important;
+        color: {text} !important;
+    }}
+    [data-testid="stAppMenuPopover"] hr {{
+        border-color: {panel_border} !important;
+    }}
+    [data-testid="stAppMenuPopover"] kbd {{
+        background: {panel} !important;
+        color: {text} !important;
+        border: 1px solid {panel_border} !important;
+    }}
     [data-testid="stAppMenuPopover"] a:hover {{
         background: {hover_bg} !important;
     }}
@@ -170,6 +186,10 @@ st.markdown(
         background: {panel} !important;
         color: {text} !important;
         border: 1px solid {panel_border} !important;
+    }}
+    [data-testid="stAppToolbar"] svg {{
+        fill: {text} !important;
+        color: {text} !important;
     }}
     [data-testid="stToggle"] div {{
         background: {panel} !important;
