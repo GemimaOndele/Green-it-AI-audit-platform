@@ -81,9 +81,19 @@ with st.sidebar:
     if compact_sidebar:
         st.caption("Expand sidebar to edit inputs.")
     st.markdown("<div class='menu-item'><span>AI Assistant</span><span class='menu-badge'>NEW</span></div>", unsafe_allow_html=True)
+    st.markdown('<div class="nav-list"><a href="#assistant">Open AI Assistant</a></div>', unsafe_allow_html=True)
     use_online_ai = st.toggle("Use Online AI (OpenAI)", value=False)
     simulate_web = st.toggle("Simulate Web Search (offline)", value=False)
     api_key_input = st.text_input("OpenAI API Key", type="password")
+    if "assistant_visible" not in st.session_state:
+        st.session_state.assistant_visible = True
+    if st.button("Show AI Assistant"):
+        st.session_state.assistant_visible = True
+    if use_online_ai and api_key_input:
+        if st.button("Test OpenAI Key"):
+            test_context = {"pue": 1.5, "dcie": 66.7, "co2_tonnes": 300.0}
+            test_reply = ai_assistant_reply_online("Test connection for Green IT audit.", test_context, api_key_input)
+            st.success("API test OK." if "error" not in test_reply.lower() else test_reply)
     with st.expander("Energy Inputs", expanded=not compact_sidebar):
         it_energy_mwh = st.number_input(
             "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
@@ -974,14 +984,20 @@ if page == "Dashboard":
         unsafe_allow_html=True,
     )
 
-    show_ai = st.button("Show AI Assistant")
-    if show_ai:
-        st.markdown("<div class='section-title'>AI Audit Assistant</div>", unsafe_allow_html=True)
-        question = st.text_area(
-            "Ask a question about your audit (e.g., how to reach -25% CO2?)",
-            height=90,
-        )
-        if st.button("Ask Assistant"):
+    if "assistant_visible" not in st.session_state:
+        st.session_state.assistant_visible = True
+    if st.button("Show AI Assistant"):
+        st.session_state.assistant_visible = True
+    if st.session_state.assistant_visible:
+        st.markdown('<div id="assistant" class="section-title">AI Audit Assistant</div>', unsafe_allow_html=True)
+        with st.form("assistant_form", clear_on_submit=False):
+            question = st.text_area(
+                "Ask a question about your audit (e.g., how to reach -25% CO2?)",
+                height=90,
+                key="assistant_question",
+            )
+            submitted = st.form_submit_button("Ask Assistant")
+        if submitted:
             context = {
                 "it_energy_mwh": it_energy_mwh,
                 "total_energy_mwh": total_energy_mwh,
@@ -1008,7 +1024,9 @@ if page == "Dashboard":
                 reply = ai_assistant_reply(question, context)
             if simulate_web:
                 reply += "\n\nSimulated web search: This is a mock summary based on best practices."
-            st.markdown(f"<div class='section'>{reply}</div>", unsafe_allow_html=True)
+            st.session_state.assistant_reply = reply
+        if "assistant_reply" in st.session_state:
+            st.markdown(f"<div class='section'>{st.session_state.assistant_reply}</div>", unsafe_allow_html=True)
         st.caption("No web browsing. Online mode uses OpenAI API only.")
 
 if page == "About":
