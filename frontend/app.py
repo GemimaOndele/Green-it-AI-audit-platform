@@ -1195,6 +1195,7 @@ st.markdown(
         font-weight: 700;
         color: #0b1a14;
         background: #7ee6b4;
+        box-shadow: 0 0 0 1px rgba(126, 230, 180, 0.65), 0 0 10px rgba(126, 230, 180, 0.45);
     }}
     .kpi-source {{
         margin-top: 6px;
