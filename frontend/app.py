@@ -154,6 +154,29 @@ st.markdown(
     [data-baseweb="popover"] {{
         background: {panel} !important;
     }}
+    [data-baseweb="popover"] > div {{
+        background: {panel} !important;
+        color: {text} !important;
+    }}
+    [data-baseweb="popover"] * {{
+        color: {text} !important;
+        background-color: transparent !important;
+    }}
+    [data-baseweb="menu"] {{
+        background: {panel} !important;
+        border: 1px solid {panel_border} !important;
+    }}
+    [role="menu"] {{
+        background: {panel} !important;
+        color: {text} !important;
+    }}
+    [role="menu"] li, [role="menuitem"] {{
+        background: {panel} !important;
+        color: {text} !important;
+    }}
+    [role="menuitem"]:hover {{
+        background: {hover_bg} !important;
+    }}
     [data-testid="stAppMenuPopover"], [data-testid="stPopoverBody"] {{
         background: {panel} !important;
         color: {text} !important;
