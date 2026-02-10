@@ -9,11 +9,13 @@ import streamlit as st
 from datetime import datetime, timezone
 import re
 import glob
+from dotenv import load_dotenv
 
 # Ensure project root is on PYTHONPATH when running via Streamlit.
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+load_dotenv(os.path.join(PROJECT_ROOT, ".greenit", ".env"))
 
 from ai_recommendation import build_recommendations
 from energy_metrics import calculate_co2_tonnes, calculate_dcie, calculate_pue
