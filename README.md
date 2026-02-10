@@ -14,6 +14,9 @@ integration of all modules into a clean, demo-ready flow.
 - Sleek dashboard with 3D-inspired cards and shadows
 - Clear input workflow and instant results
 - Visual storytelling for the -25% CO2 objective
+- GreenDC Audit AI panel with audit guidance
+- Document QA block for uploaded datasets
+- Applied parameter badges and KPI source labels
 
 ## 🧩 Modules Integrated
 
@@ -21,6 +24,7 @@ integration of all modules into a clean, demo-ready flow.
 - `energy_metrics/` : PUE, DCiE, CO2 formulas
 - `ai_recommendation/` : rule-based recommendations
 - `simulation/` : before/after scenario modeling
+- Document ingestion (PDF/CSV/DOCX) and KPI extraction
 
 ## 🧭 Run the App (Local)
 
