@@ -90,34 +90,12 @@ lightweight, modular system that favors proportional computing and transparent l
 
 ## 🧰 Environment Setup
 
-For full Windows/macOS/Linux setup, see the `main` branch README.
+See the `main` branch README for full Windows/macOS/Linux setup.
 
 ## 🤝 Team Workflow Guide
 
 See `docs/TEAM_GUIDE.md` for the clone, branch, and PR workflow.
 
-## 🏭 Example Case Study
+## 🔗 More Details
 
-- IT Energy: 780 MWh/year
-- Total Energy: 1300 MWh/year
-- Carbon factor: 0.30 kg CO2/kWh
-- PUE: ~1.67
-- CPU utilization: 18%
-- Cooling setpoint: 19 C
-- No aisle containment
-
-Target: **-25% CO2 reduction within 12 months**.
-
-## 🎯 Why This Project Matters
-
-- Based on course indicators and audit methodology
-- Realistic industrial context and constraints
-- Quantified improvement plan with clear metrics
-- AI used as decision support, not as a gimmick
-
-## 🗺️ Roadmap (Short)
-
-- Integrate richer datasets and CSV import
-- Refine simulation with energy assumptions
-- Improve dashboard visuals and storytelling
-- Prepare demo scenario and final report
+Full project description, case study, and roadmap are documented on `main`.
