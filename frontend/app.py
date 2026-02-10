@@ -18,8 +18,13 @@ st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
 
 with st.sidebar:
     st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
+    if "compact_sidebar" not in st.session_state:
+        st.session_state.compact_sidebar = False
     dark_mode = st.toggle("Dark mode", value=True)
-    compact_sidebar = st.toggle("Compact sidebar", value=False)
+    compact_sidebar = st.toggle("Compact sidebar", value=st.session_state.compact_sidebar)
+    if st.button("Toggle sidebar width"):
+        st.session_state.compact_sidebar = not st.session_state.compact_sidebar
+        compact_sidebar = st.session_state.compact_sidebar
     st.markdown(
         """
         <div class="icon-nav">
@@ -82,10 +87,12 @@ theme = "dark" if dark_mode else "light"
 bg = (
     "radial-gradient(140% 140% at 0% 0%, #0f1d3b 0%, #0a1022 55%, #060914 100%)"
     if dark_mode
-    else "radial-gradient(120% 120% at 0% 0%, #f3f6ff 0%, #f8fbff 60%, #ffffff 100%)"
+    else "radial-gradient(120% 120% at 0% 0%, #dfe7f3 0%, #e7eef9 60%, #eef3fb 100%)"
 )
 text = "#e9edff" if dark_mode else "#1a2440"
-muted = "#c9d4ff" if dark_mode else "#4a5c88"
+muted = "#c9d4ff" if dark_mode else "#41527a"
+panel = "rgba(18, 26, 51, 0.85)" if dark_mode else "rgba(226, 234, 247, 0.95)"
+panel_border = "rgba(255,255,255,0.12)" if dark_mode else "rgba(20, 30, 60, 0.18)"
 
 st.markdown(
     f"""
@@ -106,9 +113,9 @@ st.markdown(
     [data-testid="stMetricValue"] {{ color: {text} !important; text-shadow: 0 2px 6px rgba(0,0,0,0.25); }}
     [data-testid="stMetricLabel"] {{ color: {muted} !important; }}
     input, textarea, select, button {{
-        background: {"rgba(18, 26, 51, 0.85)" if dark_mode else "rgba(245, 248, 255, 0.95)"} !important;
+        background: {panel} !important;
         color: {text} !important;
-        border: 1px solid {"rgba(255,255,255,0.12)" if dark_mode else "rgba(20, 30, 60, 0.2)"} !important;
+        border: 1px solid {panel_border} !important;
     }}
     input:hover, textarea:hover, select:hover, button:hover {{
         background: {"rgba(22, 34, 68, 0.9)" if dark_mode else "rgba(235, 240, 255, 1)"} !important;
@@ -122,7 +129,7 @@ st.markdown(
         color: {text} !important;
     }}
     [data-baseweb="popover"] {{
-        background: {"rgba(18, 26, 51, 0.98)" if dark_mode else "rgba(248, 251, 255, 0.98)"} !important;
+        background: {panel} !important;
     }}
     [data-testid="stRadio"] label {{
         color: {text} !important;
@@ -132,7 +139,7 @@ st.markdown(
         font-weight: 700;
         letter-spacing: 0.02em;
         margin: 6px 0 10px 0;
-        color: #eaf0ff;
+        color: {text};
         text-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }}
     .topbar {{
@@ -157,10 +164,10 @@ st.markdown(
         gap: 8px;
         font-weight: 800;
         letter-spacing: 0.02em;
-        color: #e9edff;
+        color: {text};
     }}
     .logo span {{
-        color: #bcd0ff;
+        color: {muted};
         font-weight: 600;
         font-size: 12px;
         margin-left: 4px;
@@ -170,13 +177,13 @@ st.markdown(
         margin-right: 12px;
         padding: 6px 10px;
         border-radius: 10px;
-        background: {"rgba(20, 30, 60, 0.6)" if dark_mode else "rgba(230, 236, 255, 0.9)"};
-        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        background: {panel};
+        border: 1px solid {panel_border};
         color: {text};
         font-size: 12px;
     }}
     .nav a:hover {{
-        background: {"rgba(52, 75, 140, 0.7)" if dark_mode else "rgba(210, 225, 255, 0.9)"};
+        background: {panel};
         color: {text};
     }}
     .dropdown {{
@@ -187,8 +194,8 @@ st.markdown(
         display: none;
         position: absolute;
         min-width: 160px;
-        background: {"rgba(18, 26, 51, 0.98)" if dark_mode else "rgba(248, 251, 255, 0.98)"};
-        border: 1px solid {"rgba(255,255,255,0.12)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        background: {panel};
+        border: 1px solid {panel_border};
         border-radius: 12px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.35);
         padding: 6px;
@@ -197,19 +204,26 @@ st.markdown(
     .dropdown:hover .dropdown-content {{
         display: block;
     }}
+    .dropdown .dropdown-content .dropdown {{
+        position: relative;
+    }}
+    .dropdown .dropdown-content .dropdown .dropdown-content {{
+        left: 160px;
+        top: 0;
+    }}
     .dropdown-content a {{
         display: block;
         padding: 6px 10px;
         margin: 4px 0;
         border-radius: 8px;
-        background: {"rgba(20, 30, 60, 0.45)" if dark_mode else "rgba(240, 244, 255, 0.9)"};
+        background: {panel};
         color: {text};
         text-decoration: none;
         font-size: 12px;
         font-weight: 600;
     }}
     .dropdown-content a:hover {{
-        background: {"rgba(52, 75, 140, 0.7)" if dark_mode else "rgba(210, 225, 255, 0.9)"};
+        background: {panel};
         color: {text};
     }}
     .subtle {{
@@ -275,8 +289,8 @@ st.markdown(
     .metric-card h3 {{ margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #c9d4ff; }}
     .metric-card .value {{ font-size: 28px; font-weight: 800; color: #ffffff; text-shadow: 0 2px 6px rgba(0,0,0,0.5); }}
     .stSidebar > div:first-child {{
-        background: linear-gradient(180deg, rgba(14,21,42,0.98), rgba(9,14,29,0.98));
-        border-right: 1px solid rgba(255,255,255,0.08);
+        background: {"linear-gradient(180deg, rgba(14,21,42,0.98), rgba(9,14,29,0.98))" if dark_mode else "linear-gradient(180deg, rgba(222,230,246,0.98), rgba(214,224,242,0.98))"};
+        border-right: 1px solid {panel_border};
     }}
     .stSidebar label, .stSidebar span, .stSidebar p {{
         color: {text} !important;
@@ -289,9 +303,9 @@ st.markdown(
         color: {muted};
     }}
     .stSidebar [data-testid="stExpander"] {{
-        background: {"rgba(18, 26, 51, 0.6)" if dark_mode else "rgba(236, 242, 255, 0.95)"};
+        background: {panel};
         border-radius: 12px;
-        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        border: 1px solid {panel_border};
         padding: 6px;
     }}
     .stSidebar [data-testid="stExpander"] summary {{
@@ -317,8 +331,8 @@ st.markdown(
         align-items: center;
         height: 34px;
         border-radius: 10px;
-        background: {"rgba(20, 30, 60, 0.6)" if dark_mode else "rgba(230, 236, 255, 0.9)"};
-        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        background: {panel};
+        border: 1px solid {panel_border};
         text-decoration: none;
     }}
     .menu-item {{
@@ -347,15 +361,15 @@ st.markdown(
         padding: 6px 10px;
         margin: 4px 0;
         border-radius: 10px;
-        background: {"rgba(20, 30, 60, 0.45)" if dark_mode else "rgba(240, 244, 255, 0.9)"};
-        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        background: {panel};
+        border: 1px solid {panel_border};
         color: {text};
         text-decoration: none;
         font-size: 12px;
         font-weight: 600;
     }}
     .nav-list a:hover {{
-        background: {"rgba(52, 75, 140, 0.7)" if dark_mode else "rgba(210, 225, 255, 0.9)"};
+        background: {panel};
         color: {text};
     }}
     .stDataFrame, .stTable {{
@@ -557,7 +571,7 @@ if page == "Dashboard":
         """
         <div class="topbar">
             <div class="logo">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
                  xmlns="http://www.w3.org/2000/svg">
                   <defs>
                     <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
@@ -568,13 +582,20 @@ if page == "Dashboard":
                       <stop offset="0%" stop-color="#cfe0ff"/>
                       <stop offset="100%" stop-color="#9fb2ff"/>
                     </linearGradient>
+                    <linearGradient id="node" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stop-color="#6fd3ff"/>
+                      <stop offset="100%" stop-color="#3e7bff"/>
+                    </linearGradient>
                   </defs>
                   <path d="M5 4h14v6H5z" fill="url(#dc)"/>
                   <path d="M4 12h16v7H4z" fill="url(#dc)"/>
                   <path d="M12 2c3.2 1 4.5 3.2 4.5 5.4-2-1.2-4.5-1.2-6.8 0 0-2.2 1.3-4.4 2.3-5.4z"
                         fill="url(#leaf)"/>
+                  <circle cx="19" cy="18" r="2" fill="url(#node)"/>
+                  <circle cx="5" cy="18" r="2" fill="url(#node)"/>
+                  <path d="M7 18h10" stroke="#6fd3ff" stroke-width="1.5"/>
                 </svg>
-                GreenDC <span>Audit Console</span>
+                🌿⚡ GreenDC <span>Audit Console</span>
             </div>
             <div class="nav">
                 <div class="dropdown">
@@ -583,6 +604,13 @@ if page == "Dashboard":
                         <a href="#metrics">Energy KPIs</a>
                         <a href="#recommendations">AI Actions</a>
                         <a href="#simulation">Impact</a>
+                        <div class="dropdown">
+                            <a href="#metrics">More ▸</a>
+                            <div class="dropdown-content">
+                                <a href="#metrics">Efficiency</a>
+                                <a href="#recommendations">Optimization</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="dropdown">
@@ -590,6 +618,12 @@ if page == "Dashboard":
                     <div class="dropdown-content">
                         <a href="#about">About</a>
                         <a href="#simulation">Simulation</a>
+                        <div class="dropdown">
+                            <a href="#about">Team ▸</a>
+                            <div class="dropdown-content">
+                                <a href="#about">GreenAI Systems</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
