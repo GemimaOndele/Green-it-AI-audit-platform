@@ -15,6 +15,7 @@ lightweight, modular system that favors proportional computing and transparent l
 - **Branch**: `dev`
 - **Owner**: Gemima Ondele Pourou (Platform Architect & Frontend/Integration)
 - **Role**: Integration branch for all feature work before the stable demo on `main`.
+- **Note**: Full project setup and OS-specific environment guides live on `main`.
 
 ## ✨ Core Features
 
