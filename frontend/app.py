@@ -650,6 +650,68 @@ def action_icon_svg(action_title: str) -> str:
     )
 
 
+def ai_assistant_reply(question: str, context: dict) -> str:
+    if not question.strip():
+        return "Please enter a question related to Green IT audits or data center optimization."
+    q = question.lower()
+    allowed_keywords = [
+        "pue",
+        "dcie",
+        "co2",
+        "carbon",
+        "energy",
+        "audit",
+        "data center",
+        "cooling",
+        "virtualization",
+        "consolidation",
+        "server",
+        "efficiency",
+        "recommendation",
+        "simulation",
+    ]
+    if not any(k in q for k in allowed_keywords):
+        return (
+            "I can only answer questions related to Green IT audits, data center energy, "
+            "and optimization within this platform."
+        )
+
+    it_energy = context["it_energy_mwh"]
+    total_energy = context["total_energy_mwh"]
+    carbon_factor = context["carbon_factor"]
+    pue = context["pue"]
+    dcie = context["dcie"]
+    co2 = context["co2_tonnes"]
+    cpu = context["cpu_utilization"]
+    cooling = context["cooling_setpoint"]
+    aisle = context["aisle_containment"]
+    virt = context["virtualization_level"]
+    recs = context["recommendations"]
+
+    intro = (
+        f"Based on your audit inputs: PUE {pue:.2f}, DCiE {dcie:.1f}%, CO2 {co2:.1f} t/y, "
+        f"IT energy {it_energy:.0f} MWh/y, total energy {total_energy:.0f} MWh/y."
+    )
+    ops = []
+    if cpu < 30:
+        ops.append("consolidate servers to reduce idle energy")
+    if cooling < 22:
+        ops.append("raise cooling setpoint to reduce cooling load")
+    if not aisle:
+        ops.append("add hot/cold aisle containment to improve airflow efficiency")
+    if virt < 60:
+        ops.append("increase virtualization to reduce physical footprint")
+    if not ops:
+        ops.append("maintain current configuration and keep monitoring")
+
+    plan = "Improvement plan: " + "; ".join(ops) + "."
+    note = (
+        "This assistant is a built-in, offline advisor. It does not access the internet "
+        "and only uses the platform context."
+    )
+    return f"{intro}\n\n{plan}\n\n{note}"
+
+
 if page == "Landing":
     st.markdown(
         """
@@ -874,6 +936,28 @@ if page == "Dashboard":
         "<div class='footer'>GreenDC Audit Platform • Responsible by design • © GreenAI Systems</div>",
         unsafe_allow_html=True,
     )
+
+    st.markdown("<div class='section-title'>AI Audit Assistant</div>", unsafe_allow_html=True)
+    question = st.text_area(
+        "Ask a question about your audit (e.g., how to reach -25% CO2?)",
+        height=90,
+    )
+    if st.button("Ask Assistant"):
+        context = {
+            "it_energy_mwh": it_energy_mwh,
+            "total_energy_mwh": total_energy_mwh,
+            "carbon_factor": carbon_factor,
+            "pue": pue,
+            "dcie": dcie,
+            "co2_tonnes": co2_tonnes,
+            "cpu_utilization": cpu_utilization,
+            "cooling_setpoint": cooling_setpoint,
+            "aisle_containment": aisle_containment,
+            "virtualization_level": virtualization_level,
+            "recommendations": recs_data,
+        }
+        reply = ai_assistant_reply(question, context)
+        st.markdown(f"<div class='section'>{reply}</div>", unsafe_allow_html=True)
 
 if page == "About":
     st.markdown("<div id='about' class='section-title'>About the Platform</div>", unsafe_allow_html=True)
