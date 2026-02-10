@@ -171,6 +171,19 @@ st.markdown(
         color: {text} !important;
         border: 1px solid {panel_border} !important;
     }}
+    [data-baseweb="modal"] * {{
+        color: {text} !important;
+        background: transparent !important;
+    }}
+    [role="dialog"] {{
+        background: {panel} !important;
+        color: {text} !important;
+        border: 1px solid {panel_border} !important;
+    }}
+    [role="dialog"] * {{
+        color: {text} !important;
+        background: transparent !important;
+    }}
     [data-baseweb="layer"] {{
         background: transparent !important;
     }}
