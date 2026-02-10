@@ -128,19 +128,26 @@ with st.sidebar:
             st.experimental_set_query_params(page="dashboard")
     if "assistant_connected" not in st.session_state:
         st.session_state.assistant_connected = False
+    if "assistant_quota_exceeded" not in st.session_state:
+        st.session_state.assistant_quota_exceeded = False
     if use_online_ai and api_key_input:
         if st.button("Test OpenAI Key"):
             test_context = {"pue": 1.5, "dcie": 66.7, "co2_tonnes": 300.0}
             test_reply = ai_assistant_reply_online("Test connection for Green IT audit.", test_context, api_key_input)
             if "insufficient_quota" in test_reply.lower():
                 st.session_state.assistant_connected = False
+                st.session_state.assistant_quota_exceeded = True
                 st.error("Quota exceeded. Please check your OpenAI plan/billing.")
             elif "error" in test_reply.lower():
                 st.session_state.assistant_connected = False
+                st.session_state.assistant_quota_exceeded = False
                 st.error(test_reply)
             else:
                 st.session_state.assistant_connected = True
+                st.session_state.assistant_quota_exceeded = False
                 st.success("API test OK.")
+    if st.session_state.assistant_quota_exceeded:
+        st.error("Quota exceeded (persistent). Please top up your OpenAI account.")
     if st.session_state.assistant_connected:
         st.markdown("<div class='menu-item'><span>Connected</span><span class='menu-badge'>OK</span></div>", unsafe_allow_html=True)
     with st.expander("Energy Inputs", expanded=not compact_sidebar):
