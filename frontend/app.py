@@ -974,40 +974,42 @@ if page == "Dashboard":
         unsafe_allow_html=True,
     )
 
-    st.markdown("<div class='section-title'>AI Audit Assistant</div>", unsafe_allow_html=True)
-    question = st.text_area(
-        "Ask a question about your audit (e.g., how to reach -25% CO2?)",
-        height=90,
-    )
-    if st.button("Ask Assistant"):
-        context = {
-            "it_energy_mwh": it_energy_mwh,
-            "total_energy_mwh": total_energy_mwh,
-            "carbon_factor": carbon_factor,
-            "pue": pue,
-            "dcie": dcie,
-            "co2_tonnes": co2_tonnes,
-            "cpu_utilization": cpu_utilization,
-            "cooling_setpoint": cooling_setpoint,
-            "aisle_containment": aisle_containment,
-            "virtualization_level": virtualization_level,
-            "recommendations": recs_data,
-        }
-        api_key = (api_key_input or os.getenv("OPENAI_API_KEY", "")).strip()
-        if use_online_ai:
-            if not api_key:
-                reply = (
-                    "OpenAI mode is enabled, but no API key was provided. "
-                    "Add your key in the sidebar or set OPENAI_API_KEY."
-                )
+    show_ai = st.button("Show AI Assistant")
+    if show_ai:
+        st.markdown("<div class='section-title'>AI Audit Assistant</div>", unsafe_allow_html=True)
+        question = st.text_area(
+            "Ask a question about your audit (e.g., how to reach -25% CO2?)",
+            height=90,
+        )
+        if st.button("Ask Assistant"):
+            context = {
+                "it_energy_mwh": it_energy_mwh,
+                "total_energy_mwh": total_energy_mwh,
+                "carbon_factor": carbon_factor,
+                "pue": pue,
+                "dcie": dcie,
+                "co2_tonnes": co2_tonnes,
+                "cpu_utilization": cpu_utilization,
+                "cooling_setpoint": cooling_setpoint,
+                "aisle_containment": aisle_containment,
+                "virtualization_level": virtualization_level,
+                "recommendations": recs_data,
+            }
+            api_key = (api_key_input or os.getenv("OPENAI_API_KEY", "")).strip()
+            if use_online_ai:
+                if not api_key:
+                    reply = (
+                        "OpenAI mode is enabled, but no API key was provided. "
+                        "Add your key in the sidebar or set OPENAI_API_KEY."
+                    )
+                else:
+                    reply = ai_assistant_reply_online(question, context, api_key)
             else:
-                reply = ai_assistant_reply_online(question, context, api_key)
-        else:
-            reply = ai_assistant_reply(question, context)
-        if simulate_web:
-            reply += "\n\nSimulated web search: This is a mock summary based on best practices."
-        st.markdown(f"<div class='section'>{reply}</div>", unsafe_allow_html=True)
-    st.caption("No web browsing. Online mode uses OpenAI API only.")
+                reply = ai_assistant_reply(question, context)
+            if simulate_web:
+                reply += "\n\nSimulated web search: This is a mock summary based on best practices."
+            st.markdown(f"<div class='section'>{reply}</div>", unsafe_allow_html=True)
+        st.caption("No web browsing. Online mode uses OpenAI API only.")
 
 if page == "About":
     st.markdown("<div id='about' class='section-title'>About the Platform</div>", unsafe_allow_html=True)
