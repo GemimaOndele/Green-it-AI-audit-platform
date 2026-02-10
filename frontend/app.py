@@ -100,7 +100,7 @@ with st.sidebar:
             test_reply = ai_assistant_reply_online("Test connection for Green IT audit.", test_context, api_key_input)
             if "insufficient_quota" in test_reply.lower():
                 st.session_state.assistant_connected = False
-                st.warning("API key valid, but quota is exceeded.")
+                st.error("Quota exceeded. Please check your OpenAI plan/billing.")
             elif "error" in test_reply.lower():
                 st.session_state.assistant_connected = False
                 st.error(test_reply)
@@ -1039,6 +1039,8 @@ if page == "Dashboard":
                 reply = ai_assistant_reply(question, context)
             if simulate_web:
                 reply += "\n\nSimulated web search: This is a mock summary based on best practices."
+            if "insufficient_quota" in reply.lower():
+                st.error("Quota exceeded. Please check your OpenAI plan/billing.")
             st.session_state.assistant_reply = reply
         if "assistant_reply" in st.session_state:
             st.markdown(f"<div class='section'>{st.session_state.assistant_reply}</div>", unsafe_allow_html=True)
