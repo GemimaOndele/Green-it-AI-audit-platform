@@ -31,6 +31,11 @@ lightweight, modular system that favors proportional computing and transparent l
 - `ai_recommendation/` : rule-based recommendation engine
 - `simulation/` : scenario modeling and impact aggregation
 - `case_study/` : example inputs and datasets
+- `knowledge_base/` : rules and standards for explainable AI
+
+## 📚 Documentation
+
+- `docs/gemima_ai_prompt.md` : Prompt Cursor IA + architecture + pseudo-code (Gemima)
 
 ## 👥 Team Roles and Responsibilities
 

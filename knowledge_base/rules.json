@@ -11,7 +11,7 @@
     {
       "id": "COOLING_HIGH",
       "condition": "cooling_ratio > 60",
-      "action": "Increase temperature to 22°C",
+      "action": "Increase temperature to 22 C",
       "estimated_energy_saving_percent": 10,
       "justification": "Excessive cooling consumption"
     },
