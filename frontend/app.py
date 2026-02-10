@@ -1,9 +1,14 @@
 import os
 import sys
 
+import json
+import logging
+import warnings
 import pandas as pd
 import streamlit as st
-from dotenv import load_dotenv
+from datetime import datetime, timezone
+import re
+import glob
 
 # Ensure project root is on PYTHONPATH when running via Streamlit.
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -14,40 +19,431 @@ from ai_recommendation import build_recommendations
 from energy_metrics import calculate_co2_tonnes, calculate_dcie, calculate_pue
 from simulation import simulate_actions
 
+logging.getLogger("pypdf").setLevel(logging.ERROR)
+warnings.filterwarnings("ignore", message="Ignoring wrong pointing object*")
+
+def ensure_dir(path: str) -> None:
+    if not os.path.isdir(path):
+        os.makedirs(path, exist_ok=True)
+
+
+def safe_filename(name: str) -> str:
+    base = os.path.basename(name)
+    cleaned = "".join(ch for ch in base if ch.isalnum() or ch in {".", "_", "-"}).strip("._-")
+    if not cleaned:
+        cleaned = "upload"
+    return cleaned
+
+
+def save_uploaded_file(uploaded_file, target_dir: str) -> str:
+    ensure_dir(target_dir)
+    ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    filename = f"{ts}_{safe_filename(uploaded_file.name)}"
+    target_path = os.path.join(target_dir, filename)
+    with open(target_path, "wb") as handle:
+        handle.write(uploaded_file.getbuffer())
+    return target_path
+
+
+def append_manifest(manifest_path: str, entry: dict) -> None:
+    ensure_dir(os.path.dirname(manifest_path))
+    data = []
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, "r", encoding="utf-8") as handle:
+                data = json.load(handle)
+        except Exception:
+            data = []
+    data.append(entry)
+    with open(manifest_path, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=2)
+
+
+def upload_to_huggingface(file_path: str, repo_id: str, token: str) -> str:
+    try:
+        from huggingface_hub import HfApi
+    except Exception:
+        return "Missing dependency: huggingface_hub. Run: pip install -r requirements.txt"
+    api = HfApi(token=token)
+    filename = os.path.basename(file_path)
+    api.upload_file(
+        path_or_fileobj=file_path,
+        path_in_repo=f"uploads/{filename}",
+        repo_id=repo_id,
+        repo_type="dataset",
+    )
+    return "OK"
+
+
+def list_hf_files(repo_id: str, token: str) -> tuple[bool, list[str], str]:
+    try:
+        from huggingface_hub import HfApi
+    except Exception:
+        return False, [], "Missing dependency: huggingface_hub. Run: pip install -r requirements.txt"
+    try:
+        api = HfApi(token=token or None)
+        files = api.list_repo_files(repo_id=repo_id, repo_type="dataset")
+        return True, files, ""
+    except Exception as exc:
+        return False, [], str(exc)
+
+
+def extract_metrics_from_text(text: str) -> dict:
+    metrics = {}
+    if not text:
+        return metrics
+    patterns = {
+        "pue": r"\bPUE\b[^0-9]{0,20}([0-9]+(?:\.[0-9]+)?)",
+        "dcie": r"\bDCiE\b[^0-9]{0,20}([0-9]+(?:\.[0-9]+)?)",
+        "co2_tonnes": r"\bCO2\b[^0-9]{0,20}([0-9]+(?:\.[0-9]+)?)\s*(?:t|tonnes)",
+        "it_energy_mwh": r"\bIT\s*energy(?:\s*consumption)?\b[^0-9]{0,80}([0-9]+(?:\.[0-9]+)?)\s*MWh",
+        "total_energy_mwh": r"\bTotal\s*(?:data\s*center\s*)?energy(?:\s*consumption)?\b[^0-9]{0,80}([0-9]+(?:\.[0-9]+)?)\s*MWh",
+        "cpu_utilization": r"\bCPU\b[^0-9]{0,10}([0-9]+(?:\.[0-9]+)?)\s*%?",
+        "cooling_setpoint": r"\bCooling\s*Setpoint\b[^0-9]{0,10}([0-9]+(?:\.[0-9]+)?)",
+        "virtualization_level": r"\bVirtualization\b[^0-9]{0,10}([0-9]+(?:\.[0-9]+)?)\s*%?",
+        "carbon_factor": r"\bCarbon\s*Factor\b[^0-9]{0,20}([0-9]+(?:\.[0-9]+)?)\s*(?:kg|g)?\s*CO2\s*/\s*kWh",
+        "latency_ms": r"\bLatency\b[^0-9]{0,10}([0-9]+(?:\.[0-9]+)?)\s*ms",
+        "energy_wh_inference": r"\bEnergy\b[^0-9]{0,15}([0-9]+(?:\.[0-9]+)?)\s*Wh\s*/?\s*inference",
+        "energy_kwh_inference": r"\bEnergy\b[^0-9]{0,15}([0-9]+(?:\.[0-9]+)?)\s*kWh\s*/?\s*inference",
+        "cost_per_million": r"\bCost\b[^0-9]{0,20}([0-9]+(?:\.[0-9]+)?)\s*€\s*/?\s*1,?000,?000\s*inferences",
+    }
+    for key, pattern in patterns.items():
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            try:
+                metrics[key] = float(match.group(1))
+            except Exception:
+                continue
+    if "it_energy_mwh" in metrics and "total_energy_mwh" in metrics:
+        it_energy = metrics["it_energy_mwh"]
+        total_energy = metrics["total_energy_mwh"]
+        if it_energy > 0:
+            metrics["pue"] = total_energy / it_energy
+            metrics["dcie"] = (it_energy / total_energy) * 100
+    return metrics
+
+
+def summarize_document(uploaded_file) -> str:
+    name = uploaded_file.name.lower()
+    if name.endswith(".csv"):
+        try:
+            if hasattr(uploaded_file, "seek"):
+                uploaded_file.seek(0)
+            df = pd.read_csv(uploaded_file)
+            cols = ", ".join(df.columns[:12])
+            return f"CSV columns: {cols}. Rows: {len(df)}."
+        except Exception:
+            return "CSV uploaded but could not be parsed."
+    if name.endswith(".docx"):
+        try:
+            if hasattr(uploaded_file, "seek"):
+                uploaded_file.seek(0)
+            from docx import Document
+        except Exception:
+            return "DOCX uploaded. Install python-docx to extract text."
+        try:
+            doc = Document(uploaded_file)
+            paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+            content = " ".join(paragraphs[:20]).strip()
+            if not content:
+                return "DOCX uploaded but no readable text found."
+            return "DOCX summary: " + content[:800]
+        except Exception:
+            return "DOCX uploaded but could not be parsed."
+    if name.endswith(".pdf"):
+        try:
+            from pypdf import PdfReader
+        except Exception:
+            return "PDF uploaded. Install pypdf to extract text."
+        try:
+            if hasattr(uploaded_file, "seek"):
+                uploaded_file.seek(0)
+            reader = PdfReader(uploaded_file)
+            pages_text = []
+            for page in reader.pages[:3]:
+                text = page.extract_text() or ""
+                pages_text.append(text.strip())
+            content = " ".join(pages_text).strip()
+            if not content:
+                return "PDF uploaded but no readable text found."
+            return "PDF summary: " + content[:800]
+        except Exception:
+            return "PDF uploaded but could not be parsed."
+    return "Unsupported document type."
+
+
+def extract_pdf_text(uploaded_file, max_pages: int = 6) -> str:
+    try:
+        from pypdf import PdfReader
+    except Exception:
+        return ""
+    try:
+        if hasattr(uploaded_file, "seek"):
+            uploaded_file.seek(0)
+        reader = PdfReader(uploaded_file)
+        pages_text = []
+        for page in reader.pages[:max_pages]:
+            text = page.extract_text() or ""
+            pages_text.append(text.strip())
+        return "\n".join(pages_text).strip()
+    except Exception:
+        return ""
+
+
+def extract_docx_text(uploaded_file, max_paragraphs: int = 80) -> str:
+    try:
+        from docx import Document
+    except Exception:
+        return ""
+    try:
+        if hasattr(uploaded_file, "seek"):
+            uploaded_file.seek(0)
+        doc = Document(uploaded_file)
+        paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+        return "\n".join(paragraphs[:max_paragraphs]).strip()
+    except Exception:
+        return ""
+
+
+def extract_text_from_path(path: str, max_pages: int = 6, max_paragraphs: int = 80) -> str:
+    lower = path.lower()
+    if lower.endswith(".pdf"):
+        try:
+            from pypdf import PdfReader
+        except Exception:
+            return ""
+        try:
+            reader = PdfReader(path)
+            pages_text = []
+            for page in reader.pages[:max_pages]:
+                text = page.extract_text() or ""
+                pages_text.append(text.strip())
+            return "\n".join(pages_text).strip()
+        except Exception:
+            return ""
+    if lower.endswith(".docx"):
+        try:
+            from docx import Document
+        except Exception:
+            return ""
+        try:
+            doc = Document(path)
+            paragraphs = [p.text.strip() for p in doc.paragraphs if p.text.strip()]
+            return "\n".join(paragraphs[:max_paragraphs]).strip()
+        except Exception:
+            return ""
+    return ""
+
+
+def load_local_knowledge_base(root_dir: str) -> dict:
+    patterns = [
+        os.path.join(root_dir, "*.pdf"),
+        os.path.join(root_dir, "*.docx"),
+    ]
+    files = []
+    for pattern in patterns:
+        files.extend(glob.glob(pattern))
+    summaries = []
+    texts = []
+    for path in files[:8]:
+        text = extract_text_from_path(path)
+        if text:
+            name = os.path.basename(path)
+            summaries.append(f"LOCAL DOC: {name} | {text[:400]}")
+            texts.append(text)
+    return {"summaries": summaries, "texts": texts}
+
+def _to_float(value: str) -> float | None:
+    if not value:
+        return None
+    cleaned = value.strip().replace(" ", "")
+    if "," in cleaned and "." in cleaned:
+        cleaned = cleaned.replace(",", "")
+    elif cleaned.count(",") > 1:
+        cleaned = cleaned.replace(",", "")
+    elif "," in cleaned and "." not in cleaned:
+        cleaned = cleaned.replace(",", ".")
+    cleaned = re.sub(r"[^0-9.\-]", "", cleaned)
+    try:
+        return float(cleaned)
+    except Exception:
+        return None
+
+
+def extract_workload_inputs(text: str) -> dict:
+    if not text:
+        return {}
+    patterns = {
+        "n_inferences": r"\bN\s*=\s*([0-9,.]+)\s*inferences",
+        "gpu_power_w": r"\bP[_\s]*gpu\b[^0-9]{0,10}([0-9,.]+)\s*W",
+        "edge_power_w": r"\bP[_\s]*edge\b[^0-9]{0,10}([0-9,.]+)\s*W",
+        "gpu_latency_ms": r"\bL[_\s]*gpu\b[^0-9]{0,10}([0-9,.]+)\s*ms",
+        "edge_latency_ms": r"\bL[_\s]*edge\b[^0-9]{0,10}([0-9,.]+)\s*ms",
+        "gpu_cost_eur_per_hour": r"\b([0-9,.]+)\s*€\s*/\s*hour",
+        "electricity_cost_eur_per_kwh": r"\b([0-9,.]+)\s*€\s*/\s*kWh",
+        "hardware_cost_eur": r"\bHardware cost\b[^0-9]{0,20}([0-9,.]+)\s*€",
+        "usage_per_day": r"\b([0-9,.]+)\s*inferences\s*/\s*day",
+    }
+    result = {}
+    for key, pattern in patterns.items():
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            result[key] = _to_float(match.group(1))
+    return result
+
+
+def compute_workload_audit(inputs: dict) -> dict:
+    n = inputs.get("n_inferences")
+    gpu_p = inputs.get("gpu_power_w")
+    edge_p = inputs.get("edge_power_w")
+    gpu_l = inputs.get("gpu_latency_ms")
+    edge_l = inputs.get("edge_latency_ms")
+    gpu_cost_h = inputs.get("gpu_cost_eur_per_hour")
+    elec_cost = inputs.get("electricity_cost_eur_per_kwh")
+    hardware_cost = inputs.get("hardware_cost_eur")
+    usage_day = inputs.get("usage_per_day")
+    missing = [k for k, v in {
+        "N": n,
+        "P_gpu": gpu_p,
+        "P_edge": edge_p,
+        "L_gpu": gpu_l,
+        "L_edge": edge_l,
+    }.items() if v is None]
+    if missing:
+        return {"error": f"Missing core values: {', '.join(missing)}."}
+
+    n = float(n)
+    gpu_time_h = (n * (gpu_l / 1000.0)) / 3600.0
+    edge_time_h = (n * (edge_l / 1000.0)) / 3600.0
+
+    gpu_energy_wh = gpu_p * gpu_time_h
+    edge_energy_wh = edge_p * edge_time_h
+    gpu_energy_kwh = gpu_energy_wh / 1000.0
+    edge_energy_kwh = edge_energy_wh / 1000.0
+
+    gpu_energy_per_inf_wh = gpu_p * (gpu_l / 1000.0) / 3600.0
+    edge_energy_per_inf_wh = edge_p * (edge_l / 1000.0) / 3600.0
+
+    gpu_cost = gpu_cost_h * gpu_time_h if gpu_cost_h else None
+    edge_cost = None
+    if elec_cost:
+        edge_cost = edge_energy_kwh * elec_cost
+    if hardware_cost and usage_day:
+        total_inf_4y = usage_day * 365 * 4
+        if total_inf_4y > 0:
+            edge_cost = (edge_cost or 0) + (hardware_cost / total_inf_4y) * n
+
+    return {
+        "gpu_time_h": gpu_time_h,
+        "edge_time_h": edge_time_h,
+        "gpu_energy_wh": gpu_energy_wh,
+        "edge_energy_wh": edge_energy_wh,
+        "gpu_energy_kwh": gpu_energy_kwh,
+        "edge_energy_kwh": edge_energy_kwh,
+        "gpu_energy_per_inf_wh": gpu_energy_per_inf_wh,
+        "edge_energy_per_inf_wh": edge_energy_per_inf_wh,
+        "gpu_cost": gpu_cost,
+        "edge_cost": edge_cost,
+    }
+
+
+def summarize_workload_decision(inputs: dict, results: dict) -> str:
+    lines = []
+    if results["gpu_time_h"] < results["edge_time_h"]:
+        lines.append("Fastest: GPU")
+    else:
+        lines.append("Fastest: Edge")
+
+    if results["gpu_energy_per_inf_wh"] < results["edge_energy_per_inf_wh"]:
+        lines.append("Lowest energy per inference: GPU")
+    else:
+        lines.append("Lowest energy per inference: Edge")
+
+    if results["gpu_cost"] is not None and results["edge_cost"] is not None:
+        if results["gpu_cost"] < results["edge_cost"]:
+            lines.append("Lowest cost at scale: GPU")
+        else:
+            lines.append("Lowest cost at scale: Edge")
+    else:
+        lines.append("Cost comparison: n/a (missing cost inputs)")
+
+    n = inputs.get("n_inferences")
+    if n:
+        doubled_inputs = dict(inputs)
+        doubled_inputs["n_inferences"] = n * 2
+        doubled = compute_workload_audit(doubled_inputs)
+        if "error" not in doubled:
+            if (results["gpu_cost"] is not None and results["edge_cost"] is not None and
+                doubled["gpu_cost"] is not None and doubled["edge_cost"] is not None):
+                change = "no"
+                if (results["gpu_cost"] < results["edge_cost"]) != (doubled["gpu_cost"] < doubled["edge_cost"]):
+                    change = "yes"
+                lines.append(f"Does ranking change if N doubles? {change}")
+    return "\n".join(f"- {line}" for line in lines)
+
+
+def workload_decision_flags(results: dict) -> dict:
+    fastest = "GPU" if results["gpu_time_h"] < results["edge_time_h"] else "Edge"
+    lowest_energy = "GPU" if results["gpu_energy_per_inf_wh"] < results["edge_energy_per_inf_wh"] else "Edge"
+    if results["gpu_cost"] is not None and results["edge_cost"] is not None:
+        lowest_cost = "GPU" if results["gpu_cost"] < results["edge_cost"] else "Edge"
+    else:
+        lowest_cost = "n/a"
+    return {
+        "fastest": fastest,
+        "lowest_energy": lowest_energy,
+        "lowest_cost": lowest_cost,
+    }
+
+
+def workload_recommendation(inputs: dict, results: dict) -> str:
+    fastest = "GPU" if results["gpu_time_h"] < results["edge_time_h"] else "Edge"
+    lowest_energy = "GPU" if results["gpu_energy_per_inf_wh"] < results["edge_energy_per_inf_wh"] else "Edge"
+    if results["gpu_cost"] is not None and results["edge_cost"] is not None:
+        lowest_cost = "GPU" if results["gpu_cost"] < results["edge_cost"] else "Edge"
+    else:
+        lowest_cost = "n/a"
+    return (
+        f"- Choose {fastest} if latency/throughput is the top priority.\n"
+        f"- Choose {lowest_energy} if energy per inference is the top priority.\n"
+        f"- Choose {lowest_cost} if total cost at scale is the top priority."
+    )
+
+
+def business_goal_recommendation(goal: str, results: dict) -> str:
+    flags = workload_decision_flags(results)
+    if goal == "Minimum cost":
+        return f"Minimum cost → Recommendation: {flags['lowest_cost']}"
+    if goal == "Minimum energy per inference":
+        return f"Minimum energy per inference → Recommendation: {flags['lowest_energy']}"
+    if goal == "Minimum latency":
+        return f"Minimum latency → Recommendation: {flags['fastest']}"
+    return "Not specified"
+
 
 st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
-load_dotenv()
-load_dotenv(os.path.join(os.getcwd(), ".greenit", ".env"))
 
-def ai_assistant_reply_online(question: str, context: dict, api_key: str) -> str:
-    try:
-        from openai import OpenAI
-    except Exception:
-        return "OpenAI package is not installed. Please run: pip install -r requirements.txt"
+if "local_docs_loaded" not in st.session_state:
+    local_kb = load_local_knowledge_base(PROJECT_ROOT)
+    st.session_state["local_doc_texts"] = local_kb["texts"]
+    st.session_state["local_docs_loaded"] = True
 
-    client = OpenAI(api_key=api_key)
-    system = (
-        "You are a Green IT audit assistant for industrial data centers. "
-        "Answer only within the scope of energy audits, PUE/DCiE/CO2, "
-        "cooling optimization, virtualization, consolidation, and measurable action plans. "
-        "Do not claim to browse the web. If asked for web sources, explain no web browsing."
-    )
-    user = (
-        "User question:\n"
-        f"{question}\n\n"
-        "Audit context (use this data):\n"
-        f"{context}\n\n"
-        "Return a concise improvement plan and reasoning."
-    )
-    try:
-        response = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-            temperature=0.2,
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as exc:
-        return f"Online assistant error: {exc}"
+
+def find_local_excerpt(question: str, texts: list[str]) -> str | None:
+    if not question or not texts:
+        return None
+    tokens = [t for t in re.split(r"\W+", question.lower()) if len(t) > 4]
+    for text in texts:
+        lower = text.lower()
+        for token in tokens[:8]:
+            idx = lower.find(token)
+            if idx != -1:
+                start = max(0, idx - 140)
+                end = min(len(text), idx + 220)
+                excerpt = text[start:end].strip()
+                if excerpt:
+                    return excerpt.replace("\n", " ")
+    return None
 
 
 
@@ -113,66 +509,207 @@ with st.sidebar:
     )
     if compact_sidebar:
         st.caption("Expand sidebar to edit inputs.")
-    st.markdown("<div class='menu-item'><span>AI Assistant</span><span class='menu-badge'>NEW</span></div>", unsafe_allow_html=True)
-    st.markdown('<div class="nav-list"><a href="#assistant">Open AI Assistant</a></div>', unsafe_allow_html=True)
-    use_online_ai = st.toggle("Use Online AI (OpenAI)", value=False)
+    st.markdown("<div class='menu-item'><span>GreenDC Audit AI</span><span class='menu-badge'>OFFLINE</span></div>", unsafe_allow_html=True)
+    st.markdown('<div class="nav-list"><a href="#assistant">Open GreenDC Audit AI</a></div>', unsafe_allow_html=True)
     simulate_web = st.toggle("Simulate Web Search (offline)", value=False)
-    api_key_input = st.text_input("OpenAI API Key", type="password")
     if "assistant_visible" not in st.session_state:
         st.session_state.assistant_visible = True
-    if st.button("Show AI Assistant"):
+    if st.button("Show Knowledge Assistant"):
         st.session_state.assistant_visible = True
         if hasattr(st, "query_params"):
             st.query_params["page"] = "dashboard"
         else:
             st.experimental_set_query_params(page="dashboard")
-    if "assistant_connected" not in st.session_state:
-        st.session_state.assistant_connected = False
-    if "assistant_quota_exceeded" not in st.session_state:
-        st.session_state.assistant_quota_exceeded = False
-    if use_online_ai and api_key_input:
-        if st.button("Test OpenAI Key"):
-            test_context = {"pue": 1.5, "dcie": 66.7, "co2_tonnes": 300.0}
-            test_reply = ai_assistant_reply_online("Test connection for Green IT audit.", test_context, api_key_input)
-            if "insufficient_quota" in test_reply.lower():
-                st.session_state.assistant_connected = False
-                st.session_state.assistant_quota_exceeded = True
-                st.error("Quota exceeded. Please check your OpenAI plan/billing.")
-            elif "error" in test_reply.lower():
-                st.session_state.assistant_connected = False
-                st.session_state.assistant_quota_exceeded = False
-                st.error(test_reply)
+    with st.expander("Document Uploads (Audit)", expanded=False):
+        st.caption("Upload PDF/CSV for audit. Files are stored locally and synced to HF if configured.")
+        uploaded_docs = st.file_uploader(
+            "Upload audit documents",
+            type=["pdf", "csv", "docx"],
+            accept_multiple_files=True,
+        )
+        hf_repo = "Gkop/Green-dc-audit-platform"
+        hf_token = os.getenv("HF_TOKEN", "")
+        if uploaded_docs:
+            saved_paths = []
+            doc_summaries = []
+            doc_status = []
+            merged_metrics = {}
+            doc_texts = []
+            upload_status = []
+            for item in uploaded_docs:
+                saved_paths.append(save_uploaded_file(item, os.path.join(PROJECT_ROOT, "uploaded_docs")))
+                append_manifest(
+                    os.path.join(PROJECT_ROOT, "uploaded_docs", "manifest.json"),
+                    {"name": item.name, "saved_at": datetime.now(timezone.utc).isoformat()},
+                )
+                summary = summarize_document(item)
+                doc_summaries.append(summary)
+                if summary.startswith("PDF summary:"):
+                    full_text = extract_pdf_text(item)
+                    if full_text:
+                        metrics = extract_metrics_from_text(full_text)
+                        merged_metrics.update(metrics)
+                        doc_texts.append(full_text)
+                    doc_status.append("PDF fully readable")
+                elif summary.startswith("DOCX summary:"):
+                    full_text = extract_docx_text(item)
+                    if full_text:
+                        metrics = extract_metrics_from_text(full_text)
+                        merged_metrics.update(metrics)
+                        doc_texts.append(full_text)
+                    doc_status.append("DOCX fully readable")
+                elif summary.startswith("PDF uploaded but no readable text"):
+                    doc_status.append("PDF partially readable")
+                elif summary.startswith("PDF uploaded but could not be parsed"):
+                    doc_status.append("PDF partially readable")
+                elif summary.startswith("DOCX uploaded but no readable text"):
+                    doc_status.append("DOCX partially readable")
+                elif summary.startswith("DOCX uploaded but could not be parsed"):
+                    doc_status.append("DOCX partially readable")
+            st.success(f"Saved {len(saved_paths)} document(s) to local history.")
+            if hf_token:
+                synced = 0
+                failed = 0
+                for path in saved_paths:
+                    result = upload_to_huggingface(path, hf_repo, hf_token)
+                    if result == "OK":
+                        synced += 1
+                        upload_status.append(f"{os.path.basename(path)} • Synced to HF")
+                        try:
+                            os.remove(path)
+                        except Exception:
+                            upload_status.append(f"{os.path.basename(path)} • Local delete failed")
+                    else:
+                        failed += 1
+                        upload_status.append(f"{os.path.basename(path)} • Not synced")
+                if synced:
+                    st.success(f"Synced {synced}/{len(saved_paths)} file(s) to Hugging Face.")
+                    st.caption("Local files deleted after successful sync.")
+                if failed:
+                    st.warning(f"{failed} file(s) were not synced to Hugging Face.")
             else:
-                st.session_state.assistant_connected = True
-                st.session_state.assistant_quota_exceeded = False
-                st.success("API test OK.")
-    if st.session_state.assistant_quota_exceeded:
-        st.error("Quota exceeded (persistent). Please top up your OpenAI account.")
-    if st.session_state.assistant_connected:
-        st.markdown("<div class='menu-item'><span>Connected</span><span class='menu-badge'>OK</span></div>", unsafe_allow_html=True)
+                st.error("Hugging Face token missing. Uploads were not synced and were removed locally.")
+                for path in saved_paths:
+                    upload_status.append(f"{os.path.basename(path)} • Not synced (no HF token)")
+                    try:
+                        os.remove(path)
+                    except Exception:
+                        upload_status.append(f"{os.path.basename(path)} • Local delete failed")
+            st.session_state["doc_summaries"] = doc_summaries
+            st.session_state["doc_status"] = doc_status
+            st.session_state["doc_metrics"] = merged_metrics
+            st.session_state["doc_texts"] = doc_texts
+            st.session_state["upload_status"] = upload_status
+        st.caption("No web scraping. Uses curated datasets and uploads only.")
+        if st.session_state.get("doc_summaries"):
+            st.markdown("<div class='menu-item'><span>Documents analyzed</span><span class='menu-badge'>OK</span></div>", unsafe_allow_html=True)
+            for summary in st.session_state["doc_summaries"][:3]:
+                st.caption(summary)
+        if st.session_state.get("doc_status"):
+            st.markdown("<div class='menu-item'><span>Doc status</span><span class='menu-badge'>INFO</span></div>", unsafe_allow_html=True)
+            for status in st.session_state["doc_status"][:3]:
+                st.caption(status)
+        if st.session_state.get("upload_status"):
+            st.markdown("<div class='menu-item'><span>Uploaded files</span><span class='menu-badge'>HF</span></div>", unsafe_allow_html=True)
+            for item in st.session_state["upload_status"][:5]:
+                st.caption(item)
+    doc_metrics_preview = st.session_state.get("doc_metrics", {})
+    applied_fields = set(doc_metrics_preview.keys()) if doc_metrics_preview else set()
     with st.expander("Energy Inputs", expanded=not compact_sidebar):
+        it_label = "IT Energy (MWh/year)" + (" ✅ Applied" if "it_energy_mwh" in applied_fields else "")
         it_energy_mwh = st.number_input(
-            "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
+            it_label,
+            min_value=0.0,
+            value=float(doc_metrics_preview.get("it_energy_mwh", 780.0)),
+            step=10.0,
         )
+        if "it_energy_mwh" in applied_fields:
+            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
+        total_label = "Total Energy (MWh/year)" + (" ✅ Applied" if "total_energy_mwh" in applied_fields else "")
         total_energy_mwh = st.number_input(
-            "Total Energy (MWh/year)", min_value=0.0, value=1300.0, step=10.0
+            total_label,
+            min_value=0.0,
+            value=float(doc_metrics_preview.get("total_energy_mwh", 1300.0)),
+            step=10.0,
         )
+        if "total_energy_mwh" in applied_fields:
+            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
+        cf_label = "Carbon Factor (kg CO2/kWh)" + (" ✅ Applied" if "carbon_factor" in applied_fields else "")
         carbon_factor = st.number_input(
-            "Carbon Factor (kg CO2/kWh)", min_value=0.0, value=0.30, step=0.01
+            cf_label,
+            min_value=0.0,
+            value=float(doc_metrics_preview.get("carbon_factor", 0.30)),
+            step=0.01,
         )
+        if "carbon_factor" in applied_fields:
+            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
     with st.expander("Infrastructure Inputs", expanded=not compact_sidebar):
         servers = st.number_input("Number of Servers", min_value=0, value=320, step=10)
+        cpu_label = "Average CPU Utilization (%)" + (" ✅ Applied" if "cpu_utilization" in applied_fields else "")
         cpu_utilization = st.number_input(
-            "Average CPU Utilization (%)", min_value=0.0, max_value=100.0, value=18.0
+            cpu_label,
+            min_value=0.0,
+            max_value=100.0,
+            value=float(doc_metrics_preview.get("cpu_utilization", 18.0)),
         )
+        if "cpu_utilization" in applied_fields:
+            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
+        virt_label = "Virtualization Level (%)" + (" ✅ Applied" if "virtualization_level" in applied_fields else "")
         virtualization_level = st.number_input(
-            "Virtualization Level (%)", min_value=0.0, max_value=100.0, value=45.0
+            virt_label,
+            min_value=0.0,
+            max_value=100.0,
+            value=float(doc_metrics_preview.get("virtualization_level", 45.0)),
         )
+        if "virtualization_level" in applied_fields:
+            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
     with st.expander("Cooling & Facilities", expanded=not compact_sidebar):
+        cool_label = "Cooling Setpoint (°C)" + (" ✅ Applied" if "cooling_setpoint" in applied_fields else "")
         cooling_setpoint = st.number_input(
-            "Cooling Setpoint (°C)", min_value=10.0, max_value=30.0, value=19.0
+            cool_label,
+            min_value=10.0,
+            max_value=30.0,
+            value=float(doc_metrics_preview.get("cooling_setpoint", 19.0)),
         )
+        if "cooling_setpoint" in applied_fields:
+            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
         aisle_containment = st.checkbox("Hot/Cold Aisle Containment in place", value=False)
+
+doc_metrics = st.session_state.get("doc_metrics", {})
+workload_metrics = {
+    "latency_ms": doc_metrics.get("latency_ms"),
+    "energy_wh_inference": doc_metrics.get("energy_wh_inference"),
+    "energy_kwh_inference": doc_metrics.get("energy_kwh_inference"),
+    "cost_per_million": doc_metrics.get("cost_per_million"),
+}
+has_workload_metrics = any(value is not None for value in workload_metrics.values())
+applied_params = []
+applied_fields = set()
+if doc_metrics:
+    it_energy_mwh = doc_metrics.get("it_energy_mwh", it_energy_mwh)
+    total_energy_mwh = doc_metrics.get("total_energy_mwh", total_energy_mwh)
+    carbon_factor = doc_metrics.get("carbon_factor", carbon_factor)
+    cpu_utilization = doc_metrics.get("cpu_utilization", cpu_utilization)
+    cooling_setpoint = doc_metrics.get("cooling_setpoint", cooling_setpoint)
+    virtualization_level = doc_metrics.get("virtualization_level", virtualization_level)
+    if "it_energy_mwh" in doc_metrics:
+        applied_params.append(f"IT energy applied from doc: {doc_metrics['it_energy_mwh']:.0f} MWh/year")
+        applied_fields.add("it_energy_mwh")
+    if "total_energy_mwh" in doc_metrics:
+        applied_params.append(f"Total energy applied from doc: {doc_metrics['total_energy_mwh']:.0f} MWh/year")
+        applied_fields.add("total_energy_mwh")
+    if "carbon_factor" in doc_metrics:
+        applied_params.append(f"Carbon factor applied from doc: {doc_metrics['carbon_factor']:.2f} kg CO2/kWh")
+        applied_fields.add("carbon_factor")
+    if "cpu_utilization" in doc_metrics:
+        applied_params.append(f"CPU utilization applied from doc: {doc_metrics['cpu_utilization']:.1f}%")
+        applied_fields.add("cpu_utilization")
+    if "cooling_setpoint" in doc_metrics:
+        applied_params.append(f"Cooling setpoint applied from doc: {doc_metrics['cooling_setpoint']:.1f} °C")
+        applied_fields.add("cooling_setpoint")
+    if "virtualization_level" in doc_metrics:
+        applied_params.append(f"Virtualization level applied from doc: {doc_metrics['virtualization_level']:.1f}%")
+        applied_fields.add("virtualization_level")
 
 theme = "dark" if dark_mode else "light"
 if dark_mode:
@@ -347,17 +884,21 @@ st.markdown(
         color: {text};
         text-shadow: 0 2px 6px rgba(0,0,0,0.4);
     }}
+    .section-title {{
+        border-left: 4px solid #7ee6b4;
+        padding-left: 10px;
+    }}
     .topbar {{
         position: sticky;
         top: 0;
         z-index: 999;
         background: {panel};
         backdrop-filter: blur(10px);
-        border: 1px solid {panel_border};
+        border: 1px solid rgba(126, 230, 180, 0.45);
         border-radius: 14px;
         padding: 10px 14px;
         margin: 6px 0 16px 0;
-        box-shadow: 0 8px 20px rgba(0,0,0,0.35);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.35), 0 0 0 1px rgba(126, 230, 180, 0.15);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -383,7 +924,7 @@ st.markdown(
         padding: 6px 10px;
         border-radius: 10px;
         background: {panel};
-        border: 1px solid {panel_border};
+        border: 1px solid rgba(126, 230, 180, 0.35);
         color: {text};
         font-size: 12px;
     }}
@@ -400,7 +941,7 @@ st.markdown(
         position: absolute;
         min-width: 160px;
         background: {panel};
-        border: 1px solid {panel_border};
+        border: 1px solid rgba(126, 230, 180, 0.35);
         border-radius: 12px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.35);
         padding: 6px;
@@ -555,7 +1096,7 @@ st.markdown(
         padding: 6px 8px;
         border-radius: 10px;
         background: {"rgba(20, 30, 60, 0.6)" if dark_mode else "rgba(230, 236, 255, 0.9)"};
-        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(20, 30, 60, 0.12)"};
+        border: 1px solid rgba(126, 230, 180, 0.35);
         color: {text};
         margin-bottom: 6px;
         font-size: 12px;
@@ -575,7 +1116,7 @@ st.markdown(
         margin: 4px 0;
         border-radius: 10px;
         background: {panel};
-        border: 1px solid {panel_border};
+        border: 1px solid rgba(126, 230, 180, 0.28);
         color: {text};
         text-decoration: none;
         font-size: 12px;
@@ -622,11 +1163,43 @@ st.markdown(
     }}
     .section {{
         background: {panel};
-        border: 1px solid {panel_border};
+        border: 1px solid rgba(126, 230, 180, 0.25);
         border-radius: 16px;
         padding: 18px;
         margin-bottom: 16px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+    }}
+    .section + .section {{
+        margin-top: 12px;
+    }}
+    .section-title {{
+        margin-top: 18px;
+        margin-bottom: 12px;
+    }}
+    .soft-divider {{
+        height: 1px;
+        background: {panel_border};
+        margin: 14px 0;
+    }}
+    .applied-badge {{
+        color: #7ee6b4;
+        font-weight: 700;
+        font-size: 11px;
+    }}
+    .kpi-applied {{
+        display: inline-block;
+        margin-left: 6px;
+        padding: 2px 6px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #0b1a14;
+        background: #7ee6b4;
+    }}
+    .kpi-source {{
+        margin-top: 6px;
+        font-size: 11px;
+        color: #b6f5dc;
     }}
     .rec-card {{
         background: {card_bg};
@@ -722,11 +1295,9 @@ def action_icon_svg(action_title: str) -> str:
     )
 
 
-def ai_assistant_reply(question: str, context: dict) -> str:
-    if not question.strip():
-        return "Please enter a question related to Green IT audits or data center optimization."
+def is_audit_question(question: str) -> bool:
     q = question.lower()
-    allowed_keywords = [
+    keywords = [
         "pue",
         "dcie",
         "co2",
@@ -741,8 +1312,69 @@ def ai_assistant_reply(question: str, context: dict) -> str:
         "efficiency",
         "recommendation",
         "simulation",
+        "reduce",
+        "optimize",
     ]
-    if not any(k in q for k in allowed_keywords):
+    return any(k in q for k in keywords)
+
+
+def is_definition_question(question: str) -> bool:
+    q = question.lower()
+    return any(k in q for k in ["what is", "define", "definition", "explain"]) and (
+        "green it" in q or "sustainable energy" in q
+    )
+
+
+def is_document_question(question: str) -> bool:
+    q = question.lower()
+    return any(k in q for k in ["pdf", "document", "doc", "chapter", "summary", "extracted"])
+
+
+def is_long_paste(question: str) -> bool:
+    return len(question.strip()) > 300
+
+
+def ai_assistant_reply(question: str, context: dict) -> str:
+    if not question.strip():
+        return "Please enter a question related to Green IT audits or data center optimization."
+    if is_definition_question(question):
+        excerpt = find_local_excerpt(question, st.session_state.get("local_doc_texts", []))
+        if excerpt:
+            return (
+                "Based on course materials:\n"
+                + excerpt
+                + "\n\nGreen IT reduces the environmental impact of digital systems across "
+                "their lifecycle, while sustainable energy focuses on low‑emission energy sources "
+                "and efficient consumption."
+            )
+        return (
+            "Green IT focuses on reducing the environmental impact of digital systems across "
+            "their entire lifecycle (design, use, and end-of-life) through sobriety, efficiency, "
+            "and measurable KPIs. Sustainable energy refers to energy produced and used in ways "
+            "that minimize emissions and preserve resources for the long term (renewables, "
+            "efficient consumption, and responsible sourcing)."
+        )
+    docs = context.get("doc_summaries", [])
+    if is_document_question(question) or is_long_paste(question):
+        extracted = extract_metrics_from_text(question)
+        workload_inputs = extract_workload_inputs(question)
+        if extracted.get("it_energy_mwh") and extracted.get("total_energy_mwh"):
+            it_energy = extracted["it_energy_mwh"]
+            total_energy = extracted["total_energy_mwh"]
+            carbon_factor = extracted.get("carbon_factor", context["carbon_factor"])
+            pue = total_energy / it_energy if it_energy else context["pue"]
+            dcie = (it_energy / total_energy) * 100 if total_energy else context["dcie"]
+            co2 = calculate_co2_tonnes(total_energy, carbon_factor)
+            intro = (
+                "Detected audit metrics from the pasted document:\n"
+                f"PUE {pue:.2f}, DCiE {dcie:.1f}%, CO2 {co2:.1f} t/y, "
+                f"IT energy {it_energy:.0f} MWh/y, total energy {total_energy:.0f} MWh/y."
+            )
+            return intro
+        if any(workload_inputs.get(k) is not None for k in ["n_inferences", "gpu_power_w", "edge_power_w", "gpu_latency_ms", "edge_latency_ms"]):
+            return "Use the Document QA block below to analyze AI workload benchmarks."
+        return "Use the Document QA block below to analyze uploaded documents."
+    if not is_audit_question(question) and not context.get("doc_metrics"):
         return (
             "I can only answer questions related to Green IT audits, data center energy, "
             "and optimization within this platform."
@@ -759,6 +1391,7 @@ def ai_assistant_reply(question: str, context: dict) -> str:
     aisle = context["aisle_containment"]
     virt = context["virtualization_level"]
     recs = context["recommendations"]
+    docs = context.get("doc_summaries", [])
 
     intro = (
         f"Based on your audit inputs: PUE {pue:.2f}, DCiE {dcie:.1f}%, CO2 {co2:.1f} t/y, "
@@ -782,6 +1415,40 @@ def ai_assistant_reply(question: str, context: dict) -> str:
         "and only uses the platform context."
     )
     return f"{intro}\n\n{plan}\n\n{note}"
+
+
+def load_rules() -> dict:
+    rules_path = os.path.join(PROJECT_ROOT, "knowledge_base", "rules.json")
+    try:
+        with open(rules_path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except FileNotFoundError:
+        return {"rules": [], "standards": []}
+
+
+def rule_based_plan(context: dict, rules: dict) -> str:
+    cpu = context["cpu_utilization"]
+    cooling_ratio = context["cooling_ratio"]
+    pue = context["pue"]
+    applied = []
+    for rule in rules.get("rules", []):
+        if rule["id"] == "CPU_LOW" and cpu < 20:
+            applied.append(rule)
+        if rule["id"] == "COOLING_HIGH" and cooling_ratio > 60:
+            applied.append(rule)
+        if rule["id"] == "PUE_HIGH" and pue > 1.6:
+            applied.append(rule)
+    if not applied:
+        return "No rule triggered. Keep monitoring and maintain current best practices."
+    lines = []
+    for rule in applied:
+        lines.append(
+            f"- {rule['action']} (~{rule['estimated_energy_saving_percent']}%): {rule['justification']}"
+        )
+    return "Rule-based actions:\n" + "\n".join(lines)
+
+
+ 
 
 
 if page == "Landing":
@@ -890,14 +1557,14 @@ if page == "Dashboard":
                     </div>
                 </div>
                 <div class="dropdown">
-                    <a href="#about">Platform ▾</a>
+                    <a href="?page=about#about">Platform ▾</a>
                     <div class="dropdown-content">
-                        <a href="#about">About</a>
+                        <a href="?page=about#about">About</a>
                         <a href="#simulation">Simulation</a>
                         <div class="dropdown">
-                            <a href="#about">Team ▸</a>
+                            <a href="?page=about#team">Team ▸</a>
                             <div class="dropdown-content">
-                                <a href="#about">GreenAI Systems 🌱</a>
+                                <a href="?page=about#team">GreenAI Systems 🌱</a>
                             </div>
                         </div>
                     </div>
@@ -914,33 +1581,49 @@ if page == "Dashboard":
         pue = calculate_pue(it_energy_mwh, total_energy_mwh)
         dcie = calculate_dcie(it_energy_mwh, total_energy_mwh)
         co2_tonnes = calculate_co2_tonnes(total_energy_mwh, carbon_factor)
+        if doc_metrics:
+            if "pue" in doc_metrics:
+                pue = doc_metrics["pue"]
+            if "dcie" in doc_metrics:
+                dcie = doc_metrics["dcie"]
+            if "co2_tonnes" in doc_metrics:
+                co2_tonnes = doc_metrics["co2_tonnes"]
+        pue_from_doc = "pue" in doc_metrics
+        dcie_from_doc = "dcie" in doc_metrics
+        co2_from_doc = ("co2_tonnes" in doc_metrics) or ("total_energy_mwh" in doc_metrics) or ("carbon_factor" in doc_metrics)
 
         metric_cols = st.columns(3)
         with metric_cols[0]:
+            pue_badge = " <span class='kpi-applied'>Applied</span>" if pue_from_doc else ""
+            pue_source = "<div class='kpi-source'>Source: Document</div>" if pue_from_doc else ""
             st.markdown(
                 f"<div class='metric-card'><h3>"
                 f"<svg class='svg-icon' width='14' height='14' viewBox='0 0 24 24' fill='none' "
                 f"xmlns='http://www.w3.org/2000/svg'><path d='M13 2L3 14h7l-1 8 10-12h-7l1-8z' "
-                f"fill='#cfe0ff'/></svg>PUE</h3><div class='value'>{pue:.2f}</div></div>",
+                f"fill='#cfe0ff'/></svg>PUE{pue_badge}</h3><div class='value'>{pue:.2f}</div>{pue_source}</div>",
                 unsafe_allow_html=True,
             )
         with metric_cols[1]:
+            dcie_badge = " <span class='kpi-applied'>Applied</span>" if dcie_from_doc else ""
+            dcie_source = "<div class='kpi-source'>Source: Document</div>" if dcie_from_doc else ""
             st.markdown(
                 f"<div class='metric-card'><h3>"
                 f"<svg class='svg-icon' width='14' height='14' viewBox='0 0 24 24' fill='none' "
                 f"xmlns='http://www.w3.org/2000/svg'><path d='M4 19h16v2H4z' fill='#cfe0ff'/>"
                 f"<path d='M6 17V9h3v8H6zm5 0V5h3v12h-3zm5 0v-6h3v6h-3z' fill='#cfe0ff'/></svg>"
-                f"DCiE</h3><div class='value'>{dcie:.1f}%</div></div>",
+                f"DCiE{dcie_badge}</h3><div class='value'>{dcie:.1f}%</div>{dcie_source}</div>",
                 unsafe_allow_html=True,
             )
         with metric_cols[2]:
+            co2_badge = " <span class='kpi-applied'>Applied</span>" if co2_from_doc else ""
+            co2_source = "<div class='kpi-source'>Source: Document</div>" if co2_from_doc else ""
             st.markdown(
                 f"<div class='metric-card'><h3>"
                 f"<svg class='svg-icon' width='14' height='14' viewBox='0 0 24 24' fill='none' "
                 f"xmlns='http://www.w3.org/2000/svg'><path d='M12 2C7 2 3 6 3 11c0 4 2.6 7.5 6.4 8.7'"
                 f" stroke='#cfe0ff' stroke-width='2' fill='none'/>"
                 f"<path d='M12 2c5 0 9 4 9 9 0 4-2.6 7.5-6.4 8.7' stroke='#cfe0ff' stroke-width='2' fill='none'/>"
-                f"</svg>CO2</h3><div class='value'>{co2_tonnes:.1f} t/y</div></div>",
+                f"</svg>CO2{co2_badge}</h3><div class='value'>{co2_tonnes:.1f} t/y</div>{co2_source}</div>",
                 unsafe_allow_html=True,
             )
 
@@ -949,6 +1632,16 @@ if page == "Dashboard":
             f" | Cooling Setpoint: <b>{cooling_setpoint:.1f} °C</b></div>",
             unsafe_allow_html=True,
         )
+        if doc_metrics:
+            st.markdown(
+                "<div class='subtle'>Document metrics applied to KPIs and simulation.</div>",
+                unsafe_allow_html=True,
+            )
+            if "applied_params" in locals() and applied_params:
+                st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
+                st.markdown("<div class='subtle'><b>Applied parameters</b></div>", unsafe_allow_html=True)
+                for item in applied_params[:6]:
+                    st.markdown(f"<div class='subtle'>• {item}</div>", unsafe_allow_html=True)
         st.markdown(
             "<div class='subtle'>Tip: Improve DCiE by reducing non-IT energy overheads.</div>",
             unsafe_allow_html=True,
@@ -1004,6 +1697,43 @@ if page == "Dashboard":
         st.success("Target -25% CO2 is achievable with these actions.")
     else:
         st.info("Target -25% CO2 not reached. Adjust the action set.")
+    doc_texts = st.session_state.get("doc_texts", [])
+    if doc_texts:
+        inputs = extract_workload_inputs("\n".join(doc_texts))
+        results = compute_workload_audit(inputs)
+        if "error" not in results:
+            n_value = inputs.get("n_inferences")
+            n_display = f"{int(n_value):,}" if n_value else "n/a"
+            decision = summarize_workload_decision(inputs, results)
+            recommendation = workload_recommendation(inputs, results)
+            flags = workload_decision_flags(results)
+            goal = st.session_state.get("business_goal", "Not specified")
+            goal_line = business_goal_recommendation(goal, results)
+            rec_html = "<br>".join([line.replace("- ", "• ") for line in recommendation.splitlines()])
+            st.markdown("<div class='section-title'>AI Workload Audit</div>", unsafe_allow_html=True)
+            st.markdown(
+                f"""
+                <div class='section'>
+                N = <b>{n_display}</b> inferences (total inferences in the scenario)<br>
+                GPU total time (h): <b>{results['gpu_time_h']:.2f}</b><br>
+                Edge total time (h): <b>{results['edge_time_h']:.2f}</b><br>
+                GPU total energy (kWh): <b>{results['gpu_energy_kwh']:.3f}</b><br>
+                Edge total energy (kWh): <b>{results['edge_energy_kwh']:.3f}</b><br>
+                GPU energy per inference (Wh): <b>{results['gpu_energy_per_inf_wh']:.6f}</b><br>
+                Edge energy per inference (Wh): <b>{results['edge_energy_per_inf_wh']:.6f}</b><br>
+                GPU cost (€): <b>{results['gpu_cost']:.2f}</b><br>
+                Edge cost (€): <b>{results['edge_cost']:.2f}</b>
+                <br><br><b>Decision:</b><br>{decision.replace("\n", "<br>")}<br><br>
+                <b>Business goal:</b><br>{goal_line}<br><br>
+                <b>Key indicators:</b><br>
+                <span class='badge badge-solid'>Fastest: {flags['fastest']}</span>
+                <span class='badge badge-solid'>Lowest energy: {flags['lowest_energy']}</span>
+                <span class='badge badge-solid'>Lowest cost: {flags['lowest_cost']}</span>
+                <br><br><b>Recommendation:</b><br>{rec_html}
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
     st.markdown(
         "<div class='footer'>GreenDC Audit Platform • Responsible by design • © GreenAI Systems</div>",
         unsafe_allow_html=True,
@@ -1011,17 +1741,16 @@ if page == "Dashboard":
 
     if "assistant_visible" not in st.session_state:
         st.session_state.assistant_visible = True
-    if st.button("Show AI Assistant"):
-        st.session_state.assistant_visible = True
     if st.session_state.assistant_visible:
-        st.markdown('<div id="assistant" class="section-title">AI Audit Assistant</div>', unsafe_allow_html=True)
+        st.markdown('<div id="assistant" class="section-title">GreenDC Audit AI</div>', unsafe_allow_html=True)
+        st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
         with st.form("assistant_form", clear_on_submit=False):
             question = st.text_area(
                 "Ask a question about your audit (e.g., how to reach -25% CO2?)",
                 height=90,
                 key="assistant_question",
             )
-            submitted = st.form_submit_button("Ask Assistant")
+            submitted = st.form_submit_button("Ask Knowledge Assistant")
         if submitted:
             context = {
                 "it_energy_mwh": it_energy_mwh,
@@ -1035,26 +1764,100 @@ if page == "Dashboard":
                 "aisle_containment": aisle_containment,
                 "virtualization_level": virtualization_level,
                 "recommendations": recs_data,
+                "cooling_ratio": 100.0 * (1 - (1 / pue)) if pue > 0 else 0.0,
+                "doc_summaries": st.session_state.get("doc_summaries", []),
+                "doc_metrics": st.session_state.get("doc_metrics", {}),
             }
-            api_key = (api_key_input or os.getenv("OPENAI_API_KEY", "")).strip()
-            if use_online_ai:
-                if not api_key:
-                    reply = (
-                        "OpenAI mode is enabled, but no API key was provided. "
-                        "Add your key in the sidebar or set OPENAI_API_KEY."
-                    )
-                else:
-                    reply = ai_assistant_reply_online(question, context, api_key)
-            else:
-                reply = ai_assistant_reply(question, context)
-            if simulate_web:
+            rules = load_rules()
+            reply = ai_assistant_reply(question, context)
+            is_doc_query = is_document_question(question) or is_long_paste(question)
+            if (is_audit_question(question) or context.get("doc_metrics")) and not is_doc_query:
+                rules_block = rule_based_plan(context, rules)
+                reply += "\n\n" + rules_block
+            docs_used = "YES" if context.get("doc_summaries") else "NO"
+            reply += f"\n\nDocs used: {docs_used}"
+            if simulate_web and not is_doc_query:
                 reply += "\n\nSimulated web search: This is a mock summary based on best practices."
-            if "insufficient_quota" in reply.lower():
-                st.error("Quota exceeded. Please check your OpenAI plan/billing.")
             st.session_state.assistant_reply = reply
         if "assistant_reply" in st.session_state:
             st.markdown(f"<div class='section'>{st.session_state.assistant_reply}</div>", unsafe_allow_html=True)
-        st.caption("No web browsing. Online mode uses OpenAI API only.")
+        st.caption("Offline assistant. Uses rules + local/HF knowledge only (no web scraping).")
+
+    st.markdown("<div class='section-title'>Document QA</div>", unsafe_allow_html=True)
+    st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
+    business_goal = st.selectbox(
+        "Business goal (optional)",
+        ["Not specified", "Minimum cost", "Minimum energy per inference", "Minimum latency"],
+        index=0,
+    )
+    st.session_state["business_goal"] = business_goal
+    doc_question = st.text_area(
+        "Ask a question about uploaded documents (e.g., extract latency or cost KPIs).",
+        height=90,
+        key="doc_question",
+    )
+    if st.button("Analyze Documents"):
+        docs = st.session_state.get("doc_texts", [])
+        combined = "\n".join(docs) + "\n" + doc_question
+        if not docs and not doc_question.strip():
+            st.session_state["doc_reply"] = "No document uploaded yet."
+        else:
+            inputs = extract_workload_inputs(combined)
+            results = compute_workload_audit(inputs)
+            if "error" in results:
+                if any(inputs.get(k) is not None for k in ["n_inferences", "gpu_power_w", "edge_power_w", "gpu_latency_ms", "edge_latency_ms"]):
+                    st.session_state["doc_reply"] = (
+                        "Document KPIs detected but incomplete. "
+                        + results["error"]
+                        + "\nExtracted values: "
+                        + ", ".join(f"{k}={v}" for k, v in inputs.items())
+                    )
+                else:
+                    st.session_state["doc_reply"] = (
+                        "This document is a Green IT audit scenario (not an AI workload benchmark). "
+                        "Use the main KPIs and Applied parameters above."
+                    )
+            else:
+                gpu_cost_line = (
+                    f"GPU cost (€): {results['gpu_cost']:.2f}"
+                    if results["gpu_cost"] is not None
+                    else "GPU cost (€): n/a"
+                )
+                edge_cost_line = (
+                    f"Edge cost (€): {results['edge_cost']:.2f}"
+                    if results["edge_cost"] is not None
+                    else "Edge cost (€): n/a"
+                )
+                decision = summarize_workload_decision(inputs, results)
+                recommendation = workload_recommendation(inputs, results)
+                goal_line = business_goal_recommendation(business_goal, results)
+                n_value = inputs.get("n_inferences")
+                n_display = f"{int(n_value):,}" if n_value else "n/a"
+                rec_html = "<br>".join([line.replace("- ", "• ") for line in recommendation.splitlines()])
+                st.session_state["doc_reply"] = (
+                    "<div class='section'>"
+                    "<b>AI Workload Audit (from documents)</b><br>"
+                    f"N = <b>{n_display}</b> inferences (total inferences in the scenario)<br>"
+                    f"GPU total time (h): <b>{results['gpu_time_h']:.2f}</b><br>"
+                    f"Edge total time (h): <b>{results['edge_time_h']:.2f}</b><br>"
+                    f"GPU total energy (kWh): <b>{results['gpu_energy_kwh']:.3f}</b><br>"
+                    f"Edge total energy (kWh): <b>{results['edge_energy_kwh']:.3f}</b><br>"
+                    f"GPU energy per inference (Wh): <b>{results['gpu_energy_per_inf_wh']:.6f}</b><br>"
+                    f"Edge energy per inference (Wh): <b>{results['edge_energy_per_inf_wh']:.6f}</b><br>"
+                    f"{gpu_cost_line}<br>"
+                    f"{edge_cost_line}"
+                    "<div class='soft-divider'></div>"
+                    "<b>Decision</b><br>"
+                    f"{decision.replace('\n', '<br>')}"
+                    "<div class='soft-divider'></div>"
+                    f"<b>Business goal</b><br>{goal_line}"
+                    "<div class='soft-divider'></div>"
+                    "<b>Recommendation</b><br>"
+                    f"{rec_html}"
+                    "</div>"
+                )
+    if st.session_state.get("doc_reply"):
+        st.markdown(st.session_state["doc_reply"], unsafe_allow_html=True)
 
 if page == "About":
     st.markdown("<div id='about' class='section-title'>About the Platform</div>", unsafe_allow_html=True)
@@ -1093,6 +1896,20 @@ if page == "About":
             <span class="badge badge-solid">Green IT</span>
             <span class="badge badge-solid">Green Coding</span>
             <span class="badge badge-solid">Proportional Computing</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown("<div id='team' class='section-title'>Team</div>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="glass">
+            <b>GreenAI Systems</b><br><br>
+            Gemima Ondele Pourou • Platform Architect & Frontend/Integration<br>
+            Joseph Fabrice Tsapfack • AI & Recommendation Engine<br>
+            Mike-Brady • Simulation & Validation<br>
+            Nandaa • Data & Case Study<br>
+            Pierre Joel • Documentation & QA
         </div>
         """,
         unsafe_allow_html=True,

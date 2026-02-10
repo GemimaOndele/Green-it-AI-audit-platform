@@ -14,7 +14,7 @@ lightweight, modular system that favors proportional computing and transparent l
 
 - **Branch**: `main`
 - **Owner**: Gemima Ondele Pourou (Maintainer)
-- **Role**: Stable demo branch that presents the full platform experience.
+- **Role**: Stable demo branch that presents the full platform experience and full setup guide.
 
 ## ✨ Core Features
 
@@ -23,6 +23,10 @@ lightweight, modular system that favors proportional computing and transparent l
 - 🤖 AI-assisted recommendations (rules-based, explainable)
 - 🔁 Before/after scenario simulation
 - 🖥️ Dashboard with tables, charts, and summary insights
+- 📂 Document ingestion (PDF/CSV/DOCX) with metric extraction
+- 🧠 GreenDC Audit AI for audit guidance and CO2 reduction plans
+- 🧾 Document QA for workload benchmarks and audit scenarios
+- ✅ Applied parameter tagging and KPI source badges
 
 ## 🧩 Architecture and Modules
 
@@ -31,6 +35,11 @@ lightweight, modular system that favors proportional computing and transparent l
 - `ai_recommendation/` : rule-based recommendation engine
 - `simulation/` : scenario modeling and impact aggregation
 - `case_study/` : example inputs and datasets
+- `knowledge_base/` : rules and standards for explainable AI
+
+## 📚 Documentation
+
+- `docs/gemima_ai_prompt.md` : Prompt Cursor IA + architecture + pseudo-code (Gemima)
 
 ## 👥 Team Roles and Responsibilities
 
@@ -62,6 +71,9 @@ lightweight, modular system that favors proportional computing and transparent l
 - Streamlit (UI)
 - Pandas (data handling)
 - JSON / CSV datasets
+- pypdf (PDF parsing)
+- python-docx (DOCX parsing)
+- huggingface_hub (dataset sync)
 - GitHub for collaboration
 
 ## 🧭 User Guide (Local Run)
@@ -71,7 +83,37 @@ lightweight, modular system that favors proportional computing and transparent l
 2. Start the app
    - `streamlit run frontend/app.py`
 3. Enter data center inputs in the sidebar
-4. Review metrics, recommendations, and simulation results
+4. (Optional) Upload audit documents to auto-apply parameters
+5. Review metrics, recommendations, and simulation results
+6. Use Document QA for workload benchmark analysis
+
+## 🧰 Environment Setup (Windows / macOS / Linux)
+
+### Windows (PowerShell)
+
+1. Create and activate a virtual environment
+   - `python -m venv .greenit`
+   - `.\\.greenit\\Scripts\\Activate.ps1`
+2. Install dependencies
+   - `pip install -r requirements.txt`
+3. Run the app
+   - `streamlit run frontend/app.py`
+
+### macOS / Linux (bash)
+
+1. Create and activate a virtual environment
+   - `python3 -m venv .greenit`
+   - `source .greenit/bin/activate`
+2. Install dependencies
+   - `pip install -r requirements.txt`
+3. Run the app
+   - `streamlit run frontend/app.py`
+
+### Environment Variables (optional)
+
+Create `.greenit/.env` and add:
+- `HF_TOKEN=your_huggingface_token`
+- `OPENAI_API_KEY=` (not used in offline mode)
 
 ## 🤝 Team Workflow Guide
 
