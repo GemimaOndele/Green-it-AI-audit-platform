@@ -93,13 +93,14 @@ if dark_mode:
     card_bg = "linear-gradient(180deg, rgba(24, 36, 72, 0.98) 0%, rgba(12, 20, 40, 0.98) 100%)"
     hover_bg = "rgba(28, 40, 78, 0.95)"
 else:
-    bg = "radial-gradient(120% 120% at 0% 0%, #e6edf7 0%, #edf2fa 60%, #f4f7fb 100%)"
-    text = "#1b2233"
-    muted = "#394a6b"
-    panel = "rgba(231, 237, 247, 0.98)"
-    panel_border = "rgba(27, 34, 51, 0.12)"
-    card_bg = "linear-gradient(180deg, rgba(226, 232, 244, 0.98) 0%, rgba(216, 224, 238, 0.98) 100%)"
-    hover_bg = "rgba(210, 220, 238, 0.95)"
+    # Soft-dark corporate palette to avoid white glare.
+    bg = "radial-gradient(120% 120% at 0% 0%, #121a2c 0%, #0f1628 60%, #0b111f 100%)"
+    text = "#e5ecff"
+    muted = "#b6c5e6"
+    panel = "rgba(21, 30, 54, 0.92)"
+    panel_border = "rgba(255,255,255,0.12)"
+    card_bg = "linear-gradient(180deg, rgba(28, 40, 72, 0.98) 0%, rgba(16, 24, 48, 0.98) 100%)"
+    hover_bg = "rgba(32, 46, 86, 0.95)"
 
 st.markdown(
     f"""
@@ -112,6 +113,12 @@ st.markdown(
     }}
     body, [data-testid="stAppViewContainer"] {{
         color: {text};
+    }}
+    [data-testid="stHeader"], [data-testid="stToolbar"], [data-testid="stDecoration"] {{
+        background: transparent !important;
+    }}
+    [data-testid="stAppViewContainer"], .block-container {{
+        background: transparent !important;
     }}
     h1, h2, h3, h4, h5, p, li, label, span, div {{
         color: {text};
@@ -137,6 +144,13 @@ st.markdown(
     }}
     [data-baseweb="popover"] {{
         background: {panel} !important;
+    }}
+    [data-testid="stToggle"] div {{
+        background: {panel} !important;
+        border: 1px solid {panel_border} !important;
+    }}
+    [data-testid="stRadio"] div {{
+        background: transparent !important;
     }}
     [data-testid="stRadio"] label {{
         color: {text} !important;
@@ -243,7 +257,7 @@ st.markdown(
         padding: 28px 32px;
         border-radius: 16px;
         box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-        border: 1px solid rgba(255,255,255,0.12);
+        border: 1px solid {panel_border};
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
@@ -280,7 +294,7 @@ st.markdown(
     .glass {{
         background: {panel};
         backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        border: 1px solid {panel_border};
         box-shadow: 0 12px 24px rgba(0,0,0,0.25);
         border-radius: 16px;
         padding: 16px 18px;
@@ -291,7 +305,7 @@ st.markdown(
         padding: 16px 18px;
         border-radius: 14px;
         box-shadow: 0 12px 28px rgba(0,0,0,0.45);
-        border: 1px solid rgba(255,255,255,0.12);
+        border: 1px solid {panel_border};
     }}
     .metric-card h3 {{ margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: {muted}; }}
     .metric-card .value {{ font-size: 28px; font-weight: 800; color: {text}; text-shadow: 0 2px 6px rgba(0,0,0,0.25); }}
