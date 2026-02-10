@@ -23,6 +23,10 @@ lightweight, modular system that favors proportional computing and transparent l
 - 🤖 AI-assisted recommendations (rules-based, explainable)
 - 🔁 Before/after scenario simulation
 - 🖥️ Dashboard with tables, charts, and summary insights
+- 📂 Document ingestion (PDF/CSV/DOCX) with metric extraction
+- 🧠 GreenDC Audit AI for audit guidance and CO2 reduction plans
+- 🧾 Document QA for workload benchmarks and audit scenarios
+- ✅ Applied parameter tagging and KPI source badges
 
 ## 🧩 Architecture and Modules
 
@@ -67,6 +71,9 @@ lightweight, modular system that favors proportional computing and transparent l
 - Streamlit (UI)
 - Pandas (data handling)
 - JSON / CSV datasets
+- pypdf (PDF parsing)
+- python-docx (DOCX parsing)
+- huggingface_hub (dataset sync)
 - GitHub for collaboration
 
 ## 🧭 User Guide (Local Run)
@@ -76,7 +83,9 @@ lightweight, modular system that favors proportional computing and transparent l
 2. Start the app
    - `streamlit run frontend/app.py`
 3. Enter data center inputs in the sidebar
-4. Review metrics, recommendations, and simulation results
+4. (Optional) Upload audit documents to auto-apply parameters
+5. Review metrics, recommendations, and simulation results
+6. Use Document QA for workload benchmark analysis
 
 ## 🤝 Team Workflow Guide
 
