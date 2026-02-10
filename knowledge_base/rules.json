@@ -1,0 +1,31 @@
+{
+  "rules": [
+    {
+      "id": "CPU_LOW",
+      "condition": "cpu_utilization < 20",
+      "action": "Server consolidation",
+      "estimated_energy_saving_percent": 15,
+      "co2_impact": "High",
+      "justification": "Low server utilization"
+    },
+    {
+      "id": "COOLING_HIGH",
+      "condition": "cooling_ratio > 60",
+      "action": "Increase temperature to 22°C",
+      "estimated_energy_saving_percent": 10,
+      "justification": "Excessive cooling consumption"
+    },
+    {
+      "id": "PUE_HIGH",
+      "condition": "pue > 1.6",
+      "action": "Airflow optimization",
+      "estimated_energy_saving_percent": 8,
+      "justification": "Inefficient airflow"
+    }
+  ],
+  "standards": [
+    "ISO 50001",
+    "Green IT best practices",
+    "ASHRAE guidelines"
+  ]
+}

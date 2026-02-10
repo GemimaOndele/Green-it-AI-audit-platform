@@ -1,9 +1,9 @@
 import os
 import sys
 
+import json
 import pandas as pd
 import streamlit as st
-from dotenv import load_dotenv
 
 # Ensure project root is on PYTHONPATH when running via Streamlit.
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
@@ -16,38 +16,6 @@ from simulation import simulate_actions
 
 
 st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
-load_dotenv()
-load_dotenv(os.path.join(os.getcwd(), ".greenit", ".env"))
-
-def ai_assistant_reply_online(question: str, context: dict, api_key: str) -> str:
-    try:
-        from openai import OpenAI
-    except Exception:
-        return "OpenAI package is not installed. Please run: pip install -r requirements.txt"
-
-    client = OpenAI(api_key=api_key)
-    system = (
-        "You are a Green IT audit assistant for industrial data centers. "
-        "Answer only within the scope of energy audits, PUE/DCiE/CO2, "
-        "cooling optimization, virtualization, consolidation, and measurable action plans. "
-        "Do not claim to browse the web. If asked for web sources, explain no web browsing."
-    )
-    user = (
-        "User question:\n"
-        f"{question}\n\n"
-        "Audit context (use this data):\n"
-        f"{context}\n\n"
-        "Return a concise improvement plan and reasoning."
-    )
-    try:
-        response = client.chat.completions.create(
-            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
-            temperature=0.2,
-        )
-        return response.choices[0].message.content.strip()
-    except Exception as exc:
-        return f"Online assistant error: {exc}"
 
 
 
@@ -115,9 +83,7 @@ with st.sidebar:
         st.caption("Expand sidebar to edit inputs.")
     st.markdown("<div class='menu-item'><span>AI Assistant</span><span class='menu-badge'>NEW</span></div>", unsafe_allow_html=True)
     st.markdown('<div class="nav-list"><a href="#assistant">Open AI Assistant</a></div>', unsafe_allow_html=True)
-    use_online_ai = st.toggle("Use Online AI (OpenAI)", value=False)
     simulate_web = st.toggle("Simulate Web Search (offline)", value=False)
-    api_key_input = st.text_input("OpenAI API Key", type="password")
     if "assistant_visible" not in st.session_state:
         st.session_state.assistant_visible = True
     if st.button("Show AI Assistant"):
@@ -126,30 +92,6 @@ with st.sidebar:
             st.query_params["page"] = "dashboard"
         else:
             st.experimental_set_query_params(page="dashboard")
-    if "assistant_connected" not in st.session_state:
-        st.session_state.assistant_connected = False
-    if "assistant_quota_exceeded" not in st.session_state:
-        st.session_state.assistant_quota_exceeded = False
-    if use_online_ai and api_key_input:
-        if st.button("Test OpenAI Key"):
-            test_context = {"pue": 1.5, "dcie": 66.7, "co2_tonnes": 300.0}
-            test_reply = ai_assistant_reply_online("Test connection for Green IT audit.", test_context, api_key_input)
-            if "insufficient_quota" in test_reply.lower():
-                st.session_state.assistant_connected = False
-                st.session_state.assistant_quota_exceeded = True
-                st.error("Quota exceeded. Please check your OpenAI plan/billing.")
-            elif "error" in test_reply.lower():
-                st.session_state.assistant_connected = False
-                st.session_state.assistant_quota_exceeded = False
-                st.error(test_reply)
-            else:
-                st.session_state.assistant_connected = True
-                st.session_state.assistant_quota_exceeded = False
-                st.success("API test OK.")
-    if st.session_state.assistant_quota_exceeded:
-        st.error("Quota exceeded (persistent). Please top up your OpenAI account.")
-    if st.session_state.assistant_connected:
-        st.markdown("<div class='menu-item'><span>Connected</span><span class='menu-badge'>OK</span></div>", unsafe_allow_html=True)
     with st.expander("Energy Inputs", expanded=not compact_sidebar):
         it_energy_mwh = st.number_input(
             "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
@@ -784,6 +726,37 @@ def ai_assistant_reply(question: str, context: dict) -> str:
     return f"{intro}\n\n{plan}\n\n{note}"
 
 
+def load_rules() -> dict:
+    rules_path = os.path.join(PROJECT_ROOT, "knowledge_base", "rules.json")
+    try:
+        with open(rules_path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except FileNotFoundError:
+        return {"rules": [], "standards": []}
+
+
+def rule_based_plan(context: dict, rules: dict) -> str:
+    cpu = context["cpu_utilization"]
+    cooling_ratio = context["cooling_ratio"]
+    pue = context["pue"]
+    applied = []
+    for rule in rules.get("rules", []):
+        if rule["id"] == "CPU_LOW" and cpu < 20:
+            applied.append(rule)
+        if rule["id"] == "COOLING_HIGH" and cooling_ratio > 60:
+            applied.append(rule)
+        if rule["id"] == "PUE_HIGH" and pue > 1.6:
+            applied.append(rule)
+    if not applied:
+        return "No rule triggered. Keep monitoring and maintain current best practices."
+    lines = []
+    for rule in applied:
+        lines.append(
+            f"- {rule['action']} (~{rule['estimated_energy_saving_percent']}%): {rule['justification']}"
+        )
+    return "Improvement plan:\n" + "\n".join(lines)
+
+
 if page == "Landing":
     st.markdown(
         """
@@ -1035,26 +1008,17 @@ if page == "Dashboard":
                 "aisle_containment": aisle_containment,
                 "virtualization_level": virtualization_level,
                 "recommendations": recs_data,
+                "cooling_ratio": 100.0 * (1 - (1 / pue)) if pue > 0 else 0.0,
             }
-            api_key = (api_key_input or os.getenv("OPENAI_API_KEY", "")).strip()
-            if use_online_ai:
-                if not api_key:
-                    reply = (
-                        "OpenAI mode is enabled, but no API key was provided. "
-                        "Add your key in the sidebar or set OPENAI_API_KEY."
-                    )
-                else:
-                    reply = ai_assistant_reply_online(question, context, api_key)
-            else:
-                reply = ai_assistant_reply(question, context)
+            rules = load_rules()
+            reply = ai_assistant_reply(question, context)
+            reply += "\n\n" + rule_based_plan(context, rules)
             if simulate_web:
                 reply += "\n\nSimulated web search: This is a mock summary based on best practices."
-            if "insufficient_quota" in reply.lower():
-                st.error("Quota exceeded. Please check your OpenAI plan/billing.")
             st.session_state.assistant_reply = reply
         if "assistant_reply" in st.session_state:
             st.markdown(f"<div class='section'>{st.session_state.assistant_reply}</div>", unsafe_allow_html=True)
-        st.caption("No web browsing. Online mode uses OpenAI API only.")
+        st.caption("No web browsing. Assistant is rule-based and offline.")
 
 if page == "About":
     st.markdown("<div id='about' class='section-title'>About the Platform</div>", unsafe_allow_html=True)
