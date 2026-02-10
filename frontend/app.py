@@ -92,6 +92,10 @@ with st.sidebar:
         st.session_state.assistant_visible = True
     if st.button("Show AI Assistant"):
         st.session_state.assistant_visible = True
+        if hasattr(st, "query_params"):
+            st.query_params["page"] = "dashboard"
+        else:
+            st.experimental_set_query_params(page="dashboard")
     if "assistant_connected" not in st.session_state:
         st.session_state.assistant_connected = False
     if use_online_ai and api_key_input:
