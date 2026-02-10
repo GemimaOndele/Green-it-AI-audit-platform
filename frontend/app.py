@@ -78,6 +78,9 @@ with st.sidebar:
     )
     if compact_sidebar:
         st.caption("Expand sidebar to edit inputs.")
+    st.markdown("<div class='menu-item'><span>AI Assistant</span><span class='menu-badge'>NEW</span></div>", unsafe_allow_html=True)
+    use_online_ai = st.toggle("Use Online AI (OpenAI)", value=False)
+    api_key_input = st.text_input("OpenAI API Key", type="password")
     with st.expander("Energy Inputs", expanded=not compact_sidebar):
         it_energy_mwh = st.number_input(
             "IT Energy (MWh/year)", min_value=0.0, value=780.0, step=10.0
@@ -712,6 +715,37 @@ def ai_assistant_reply(question: str, context: dict) -> str:
     return f"{intro}\n\n{plan}\n\n{note}"
 
 
+def ai_assistant_reply_online(question: str, context: dict, api_key: str) -> str:
+    try:
+        from openai import OpenAI
+    except Exception:
+        return "OpenAI package is not installed. Please run: pip install -r requirements.txt"
+
+    client = OpenAI(api_key=api_key)
+    system = (
+        "You are a Green IT audit assistant for industrial data centers. "
+        "Answer only within the scope of energy audits, PUE/DCiE/CO2, "
+        "cooling optimization, virtualization, consolidation, and measurable action plans. "
+        "Do not claim to browse the web."
+    )
+    user = (
+        "User question:\n"
+        f"{question}\n\n"
+        "Audit context (use this data):\n"
+        f"{context}\n\n"
+        "Return a concise improvement plan and reasoning."
+    )
+    try:
+        response = client.chat.completions.create(
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+            temperature=0.2,
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as exc:
+        return f"Online assistant error: {exc}"
+
+
 if page == "Landing":
     st.markdown(
         """
@@ -956,7 +990,17 @@ if page == "Dashboard":
             "virtualization_level": virtualization_level,
             "recommendations": recs_data,
         }
-        reply = ai_assistant_reply(question, context)
+        api_key = (api_key_input or os.getenv("OPENAI_API_KEY", "")).strip()
+        if use_online_ai:
+            if not api_key:
+                reply = (
+                    "OpenAI mode is enabled, but no API key was provided. "
+                    "Add your key in the sidebar or set OPENAI_API_KEY."
+                )
+            else:
+                reply = ai_assistant_reply_online(question, context, api_key)
+        else:
+            reply = ai_assistant_reply(question, context)
         st.markdown(f"<div class='section'>{reply}</div>", unsafe_allow_html=True)
 
 if page == "About":
