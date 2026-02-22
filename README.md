@@ -119,7 +119,7 @@ Create `.greenit/.env` and add:
 
 See `docs/TEAM_GUIDE.md` for the clone, branch, and PR workflow.
 
-## 🏭 Example Case Study
+## 🏭 Example Case Study(not a real case study of a company,  it is just for doing a test of the frontend)
 
 - IT Energy: 780 MWh/year
 - Total Energy: 1300 MWh/year
