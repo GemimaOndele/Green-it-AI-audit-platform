@@ -7,7 +7,7 @@ PUE, DCiE, and CO2 metrics.
 
 - **Branch**: `feature/energy-metrics`
 - **Owner**: Mike-Brady Mbolim Mbock (Energy Metrics Engineer)
-- **Scope**: formulas, data inputs, validation against course exercises.
+- **Scope**: formulas, data inputs, validation against course exercises,most important search for a real case study of a company to apply to the project.
 
 ## ✅ Key Deliverables
 
