@@ -59,6 +59,24 @@ def append_manifest(manifest_path: str, entry: dict) -> None:
         json.dump(data, handle, indent=2)
 
 
+def cleanup_uploaded_docs() -> None:
+    uploads_dir = os.path.join(PROJECT_ROOT, "uploaded_docs")
+    if not os.path.isdir(uploads_dir):
+        return
+    for entry in os.listdir(uploads_dir):
+        path = os.path.join(uploads_dir, entry)
+        try:
+            if os.path.isfile(path):
+                os.remove(path)
+        except Exception:
+            continue
+    try:
+        if not os.listdir(uploads_dir):
+            os.rmdir(uploads_dir)
+    except Exception:
+        pass
+
+
 def upload_to_huggingface(file_path: str, repo_id: str, token: str) -> str:
     try:
         from huggingface_hub import HfApi
@@ -422,6 +440,7 @@ def business_goal_recommendation(goal: str, results: dict) -> str:
 
 
 st.set_page_config(page_title="GreenDC Audit Platform", layout="wide")
+cleanup_uploaded_docs()
 
 if "local_docs_loaded" not in st.session_state:
     local_kb = load_local_knowledge_base(PROJECT_ROOT)
