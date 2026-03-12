@@ -14,6 +14,7 @@ PUE, DCiE, and CO2 metrics.
 - Accurate PUE, DCiE, and CO2 calculations
 - Clean input/output data model
 - Tested formulas aligned with course TDs
+- Real case study(from a company) + report
 
 ## 🧩 Module
 
