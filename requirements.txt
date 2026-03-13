@@ -5,3 +5,4 @@ huggingface_hub
 pypdf
 python-docx
 python-dotenv
+pytest

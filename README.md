@@ -29,6 +29,24 @@ lightweight, modular system that favors proportional computing and transparent l
 - 🧾 Document QA for workload benchmarks and audit scenarios
 - ✅ Applied parameter tagging and KPI source badges
 
+## 🖥️ Interface Behavior & Features (How it works)
+
+- **Navigation**: Top bar + sidebar sections (Metrics, Recommendations, Simulation, About).
+- **Case study selector**: Choose *Course exercises (test)* or *Real case study (Google)*.
+- **Inputs**: Sidebar fields are auto‑filled from documents or case study datasets.
+- **KPI cards**: PUE, DCiE, CO2 show **Applied** badges + **Source** (Document / Case study).
+- **Recommendations**: Explainable, rule‑based actions with estimated savings.
+- **Simulation**: Before/After energy scenario to validate the -25% CO2 target.
+- **Documents**: Upload PDF/CSV/DOCX; extraction applies metrics automatically.
+- **Document QA**: Analyze workload benchmarks separately from audit KPIs.
+- **Insights & graphs**: Clear charts with labeled axes (CO2 current vs target, energy mix, PUE comparison).
+
+## ▶️ Run Command
+
+Start the app locally with:
+
+- `streamlit run frontend/app.py`
+
 ## 🧩 Architecture and Modules
 
 - `frontend/` : Streamlit UI and user flow
