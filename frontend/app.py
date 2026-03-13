@@ -6,14 +6,22 @@ import logging
 import warnings
 import pandas as pd
 import streamlit as st
+import altair as alt
 from datetime import datetime, timezone
 import re
 import glob
+try:
+    from dotenv import load_dotenv
+except Exception:
+    load_dotenv = None
 
 # Ensure project root is on PYTHONPATH when running via Streamlit.
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
+if load_dotenv:
+    load_dotenv(os.path.join(PROJECT_ROOT, ".greenit", ".env"))
+    load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 
 from ai_recommendation import build_recommendations
 from energy_metrics import calculate_co2_tonnes, calculate_dcie, calculate_pue
@@ -33,6 +41,45 @@ def safe_filename(name: str) -> str:
     if not cleaned:
         cleaned = "upload"
     return cleaned
+
+
+def normalize_recommendation_text(text: str) -> str:
+    if not text:
+        return text
+    replacements = {
+        "Consolidation des serveurs": "Server consolidation",
+        "Faible taux d'utilisation CPU. Consolider permet de reduire le parc et les pertes d'energie.": (
+            "Low CPU utilization. Consolidation reduces the server fleet and avoids idle energy losses."
+        ),
+        "Faible taux d'utilisation CPU. Consolider permet de réduire le parc et les pertes d'énergie.": (
+            "Low CPU utilization. Consolidation reduces the server fleet and avoids idle energy losses."
+        ),
+        "Optimisation du point de consigne de refroidissement": "Optimize cooling setpoint",
+        "La temperature est basse. Un setpoint plus eleve peut reduire la consommation de refroidissement.": (
+            "Current temperature is low. Raising the setpoint can reduce cooling consumption."
+        ),
+        "La température est basse. Un setpoint plus élevé peut réduire la consommation de refroidissement.": (
+            "Current temperature is low. Raising the setpoint can reduce cooling consumption."
+        ),
+        "Mise en place d'allee chaude/froide": "Add hot/cold aisle containment",
+        "L'absence de confinement augmente les pertes. L'ajout d'allee chaude/froide ameliore l'efficacite du refroidissement.": (
+            "Lack of containment increases losses. Aisle containment improves cooling efficiency."
+        ),
+        "L'absence de confinement augmente les pertes. L'ajout d'allée chaude/froide améliore l'efficacité du refroidissement.": (
+            "Lack of containment increases losses. Aisle containment improves cooling efficiency."
+        ),
+        "Renforcer la virtualisation": "Increase virtualization",
+        "Niveau de virtualisation faible. Plus de consolidation logique reduit le nombre de serveurs physiques.": (
+            "Low virtualization level. More logical consolidation reduces the number of physical servers."
+        ),
+        "Niveau de virtualisation faible. Plus de consolidation logique réduit le nombre de serveurs physiques.": (
+            "Low virtualization level. More logical consolidation reduces the number of physical servers."
+        ),
+    }
+    for src, dst in replacements.items():
+        if re.search(re.escape(src), text, flags=re.IGNORECASE):
+            text = re.sub(re.escape(src), dst, text, flags=re.IGNORECASE)
+    return text
 
 
 def save_uploaded_file(uploaded_file, target_dir: str) -> str:
@@ -77,6 +124,128 @@ def cleanup_uploaded_docs() -> None:
         pass
 
 
+def load_case_study_csv() -> tuple[dict, list[dict]]:
+    csv_path = os.path.join(PROJECT_ROOT, "case_study", "google_case_study.csv")
+    if not os.path.exists(csv_path):
+        return {}, []
+    try:
+        df = pd.read_csv(csv_path)
+    except Exception:
+        return {}, []
+    records = df.to_dict(orient="records")
+    data = {}
+
+    def _to_float(value) -> float | None:
+        if value is None:
+            return None
+        raw = str(value).strip()
+        if not raw:
+            return None
+        raw = raw.replace("~", "").replace("≈", "")
+        raw = re.sub(r"[^0-9,.\-]", "", raw)
+        if not raw:
+            return None
+        if "," in raw and "." in raw:
+            raw = raw.replace(",", "")
+        elif "," in raw and "." not in raw:
+            raw = raw.replace(",", ".")
+        try:
+            return float(raw)
+        except Exception:
+            return None
+
+    for row in records:
+        field = str(row.get("field", "")).strip()
+        value = row.get("value")
+        if not field:
+            continue
+        data[field] = value
+    return data, records
+
+
+def load_case_study_json() -> dict:
+    json_path = os.path.join(PROJECT_ROOT, "case_study", "google_case_study.json")
+    if not os.path.exists(json_path):
+        return {}
+    try:
+        with open(json_path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+    except Exception:
+        return {}
+
+
+def get_case_study_defaults() -> dict:
+    csv_data, _ = load_case_study_csv()
+    json_data = load_case_study_json()
+    defaults = {}
+
+    def _to_float(value) -> float | None:
+        if value is None:
+            return None
+        raw = str(value).strip()
+        if not raw:
+            return None
+        raw = raw.replace("~", "").replace("≈", "")
+        raw = re.sub(r"[^0-9,.\-]", "", raw)
+        if not raw:
+            return None
+        if "," in raw and "." in raw:
+            raw = raw.replace(",", "")
+        elif "," in raw and "." not in raw:
+            raw = raw.replace(",", ".")
+        try:
+            return float(raw)
+        except Exception:
+            return None
+
+    mappings = {
+        "it_energy_mwh": "it_energy_mwh_per_year",
+        "total_energy_mwh": "total_energy_mwh_per_year",
+        "carbon_factor": "carbon_factor_kg_co2_per_kwh",
+        "servers": "num_servers_approx",
+        "cpu_utilization": "avg_cpu_utilization_percent",
+        "pue": "pue",
+        "dcie": "dcie_percent",
+        "co2_tonnes": "co2_tonnes_per_year",
+    }
+    for target, source in mappings.items():
+        value = csv_data.get(source)
+        parsed = _to_float(value)
+        if parsed is not None:
+            defaults[target] = parsed
+
+    inputs = (json_data.get("inputs") or {}) if isinstance(json_data, dict) else {}
+    cooling_setpoint = inputs.get("cooling_setpoint_celsius")
+    cooling_setpoint = _to_float(cooling_setpoint)
+    if cooling_setpoint is not None:
+        defaults["cooling_setpoint"] = cooling_setpoint
+    aisle_containment = inputs.get("aisle_containment")
+    if isinstance(aisle_containment, bool):
+        defaults["aisle_containment"] = aisle_containment
+
+    return defaults
+
+
+def load_td_validation() -> list[dict]:
+    path = os.path.join(PROJECT_ROOT, "case_study", "td_validation.json")
+    if not os.path.exists(path):
+        return []
+
+
+def render_table(df: pd.DataFrame, title: str) -> None:
+    if df.empty:
+        return
+    st.markdown(f"<div class='subtle'><b>{title}</b></div>", unsafe_allow_html=True)
+    html = df.to_html(index=False, classes="case-table", border=0)
+    st.markdown(f"<div class='table-wrap'>{html}</div>", unsafe_allow_html=True)
+    try:
+        with open(path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        return payload.get("validation_results", [])
+    except Exception:
+        return []
+
+
 def upload_to_huggingface(file_path: str, repo_id: str, token: str) -> str:
     try:
         from huggingface_hub import HfApi
@@ -110,28 +279,64 @@ def extract_metrics_from_text(text: str) -> dict:
     metrics = {}
     if not text:
         return metrics
-    patterns = {
-        "pue": r"\bPUE\b[^0-9]{0,20}([0-9]+(?:\.[0-9]+)?)",
-        "dcie": r"\bDCiE\b[^0-9]{0,20}([0-9]+(?:\.[0-9]+)?)",
-        "co2_tonnes": r"\bCO2\b[^0-9]{0,20}([0-9]+(?:\.[0-9]+)?)\s*(?:t|tonnes)",
-        "it_energy_mwh": r"\bIT\s*energy(?:\s*consumption)?\b[^0-9]{0,80}([0-9]+(?:\.[0-9]+)?)\s*MWh",
-        "total_energy_mwh": r"\bTotal\s*(?:data\s*center\s*)?energy(?:\s*consumption)?\b[^0-9]{0,80}([0-9]+(?:\.[0-9]+)?)\s*MWh",
-        "cpu_utilization": r"\bCPU\b[^0-9]{0,10}([0-9]+(?:\.[0-9]+)?)\s*%?",
-        "cooling_setpoint": r"\bCooling\s*Setpoint\b[^0-9]{0,10}([0-9]+(?:\.[0-9]+)?)",
-        "virtualization_level": r"\bVirtualization\b[^0-9]{0,10}([0-9]+(?:\.[0-9]+)?)\s*%?",
-        "carbon_factor": r"\bCarbon\s*Factor\b[^0-9]{0,20}([0-9]+(?:\.[0-9]+)?)\s*(?:kg|g)?\s*CO2\s*/\s*kWh",
-        "latency_ms": r"\bLatency\b[^0-9]{0,10}([0-9]+(?:\.[0-9]+)?)\s*ms",
-        "energy_wh_inference": r"\bEnergy\b[^0-9]{0,15}([0-9]+(?:\.[0-9]+)?)\s*Wh\s*/?\s*inference",
-        "energy_kwh_inference": r"\bEnergy\b[^0-9]{0,15}([0-9]+(?:\.[0-9]+)?)\s*kWh\s*/?\s*inference",
-        "cost_per_million": r"\bCost\b[^0-9]{0,20}([0-9]+(?:\.[0-9]+)?)\s*€\s*/?\s*1,?000,?000\s*inferences",
-    }
-    for key, pattern in patterns.items():
+    def _to_float(raw: str) -> float | None:
+        if raw is None:
+            return None
+        cleaned = raw.strip()
+        cleaned = cleaned.replace("~", "").replace("≈", "")
+        cleaned = re.sub(r"[^0-9,.\-]", "", cleaned)
+        if not cleaned:
+            return None
+        if "," in cleaned and "." in cleaned:
+            cleaned = cleaned.replace(",", "")
+        elif "," in cleaned and "." not in cleaned:
+            cleaned = cleaned.replace(",", ".")
+        try:
+            return float(cleaned)
+        except Exception:
+            return None
+
+    def _match_number(pattern: str) -> float | None:
         match = re.search(pattern, text, re.IGNORECASE)
-        if match:
-            try:
-                metrics[key] = float(match.group(1))
-            except Exception:
-                continue
+        if not match:
+            return None
+        return _to_float(match.group(1))
+
+    def _match_energy(pattern: str) -> float | None:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if not match:
+            return None
+        value = _to_float(match.group(1))
+        unit = match.group(2).lower() if match.group(2) else "mwh"
+        if value is None:
+            return None
+        if unit == "twh":
+            value *= 1_000_000
+        return value
+
+    metrics["pue"] = _match_number(r"\bPUE\b[^0-9]{0,20}([0-9][0-9,.\s]*)")
+    metrics["dcie"] = _match_number(r"\bDCiE\b[^0-9]{0,20}([0-9][0-9,.\s]*)")
+    metrics["co2_tonnes"] = _match_number(r"\bCO2\b[^0-9]{0,20}([0-9][0-9,.\s]*)\s*(?:t|tonnes|tco2)")
+    metrics["it_energy_mwh"] = _match_energy(
+        r"\bIT\s*energy(?:\s*\(campus\))?(?:\s*consumption)?\b[^0-9]{0,80}([0-9][0-9,.\s]*)\s*(MWh|TWh)"
+    )
+    metrics["total_energy_mwh"] = _match_energy(
+        r"\bTotal\s*(?:data\s*center\s*)?energy(?:\s*\(campus\))?(?:\s*consumption)?\b[^0-9]{0,80}([0-9][0-9,.\s]*)\s*(MWh|TWh)"
+    )
+    metrics["cpu_utilization"] = _match_number(r"\bCPU\s*utilization\b[^0-9]{0,20}([0-9][0-9,.\s]*)\s*%?")
+    metrics["servers"] = _match_number(r"\b(?:Approx\.?\s*)?servers\b[^0-9]{0,20}([0-9][0-9,.\s]*)")
+    metrics["cooling_setpoint"] = _match_number(r"\bCooling\s*Setpoint\b[^0-9]{0,10}([0-9][0-9,.\s]*)")
+    metrics["virtualization_level"] = _match_number(r"\bVirtualization\b[^0-9]{0,10}([0-9][0-9,.\s]*)\s*%?")
+    metrics["carbon_factor"] = _match_number(
+        r"\bCarbon\s*factor\b[^0-9]{0,20}([0-9][0-9,.\s]*)\s*(?:kg|g)?\s*CO2\s*/\s*kWh"
+    )
+    metrics["latency_ms"] = _match_number(r"\bLatency\b[^0-9]{0,10}([0-9][0-9,.\s]*)\s*ms")
+    metrics["energy_wh_inference"] = _match_number(r"\bEnergy\b[^0-9]{0,15}([0-9][0-9,.\s]*)\s*Wh\s*/?\s*inference")
+    metrics["energy_kwh_inference"] = _match_number(r"\bEnergy\b[^0-9]{0,15}([0-9][0-9,.\s]*)\s*kWh\s*/?\s*inference")
+    metrics["cost_per_million"] = _match_number(
+        r"\bCost\b[^0-9]{0,20}([0-9][0-9,.\s]*)\s*€\s*/?\s*1,?000,?000\s*inferences"
+    )
+    metrics = {k: v for k, v in metrics.items() if v is not None}
     if "it_energy_mwh" in metrics and "total_energy_mwh" in metrics:
         it_energy = metrics["it_energy_mwh"]
         total_energy = metrics["total_energy_mwh"]
@@ -479,6 +684,28 @@ st.markdown(
     [data-testid="stSpinner"] * {
         color: #e5ecff !important;
     }
+    .table-wrap {
+        border: 1px solid #2bd673;
+        border-radius: 12px;
+        padding: 10px;
+        margin-top: 8px;
+        background: rgba(20, 28, 52, 0.35);
+        box-shadow: 0 10px 26px rgba(0,0,0,0.3);
+    }
+    table.case-table {
+        width: 100%;
+        border-collapse: collapse;
+        color: #e9edff;
+        font-size: 0.92rem;
+    }
+    table.case-table th, table.case-table td {
+        border: 1px solid rgba(43, 214, 115, 0.6);
+        padding: 8px 10px;
+    }
+    table.case-table th {
+        background: rgba(28, 80, 52, 0.45);
+        color: #bff7d4;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -539,6 +766,19 @@ with st.sidebar:
             st.query_params["page"] = "dashboard"
         else:
             st.experimental_set_query_params(page="dashboard")
+    case_study_options = ["Course exercises (test)", "Real case study (Google)"]
+    if "case_study_mode" not in st.session_state:
+        st.session_state.case_study_mode = case_study_options[0]
+    case_study_mode = st.selectbox(
+        "Case study data source",
+        case_study_options,
+        index=case_study_options.index(st.session_state.case_study_mode),
+    )
+    st.session_state.case_study_mode = case_study_mode
+    use_real_case = case_study_mode == "Real case study (Google)"
+    case_study_defaults = get_case_study_defaults() if use_real_case else {}
+    if use_real_case:
+        st.caption("Using Google case study dataset from case_study/ for baseline inputs.")
     with st.expander("Document Uploads (Audit)", expanded=False):
         st.caption("Upload PDF/CSV for audit. Files are stored locally and synced to HF if configured.")
         uploaded_docs = st.file_uploader(
@@ -634,67 +874,88 @@ with st.sidebar:
                 st.caption(item)
     doc_metrics_preview = st.session_state.get("doc_metrics", {})
     applied_fields = set(doc_metrics_preview.keys()) if doc_metrics_preview else set()
+    applied_source_label = "Data from document" if doc_metrics_preview else ""
+    if use_real_case and not doc_metrics_preview:
+        applied_fields = set(case_study_defaults.keys())
+        applied_source_label = "Case study dataset"
     with st.expander("Energy Inputs", expanded=not compact_sidebar):
         it_label = "IT Energy (MWh/year)" + (" ✅ Applied" if "it_energy_mwh" in applied_fields else "")
+        it_default = case_study_defaults.get("it_energy_mwh", 780.0)
         it_energy_mwh = st.number_input(
             it_label,
             min_value=0.0,
-            value=float(doc_metrics_preview.get("it_energy_mwh", 780.0)),
+            value=float(doc_metrics_preview.get("it_energy_mwh", it_default)),
             step=10.0,
         )
-        if "it_energy_mwh" in applied_fields:
-            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
+        if "it_energy_mwh" in applied_fields and applied_source_label:
+            st.markdown(f"<span class='applied-badge'>Applied • {applied_source_label}</span>", unsafe_allow_html=True)
         total_label = "Total Energy (MWh/year)" + (" ✅ Applied" if "total_energy_mwh" in applied_fields else "")
+        total_default = case_study_defaults.get("total_energy_mwh", 1300.0)
         total_energy_mwh = st.number_input(
             total_label,
             min_value=0.0,
-            value=float(doc_metrics_preview.get("total_energy_mwh", 1300.0)),
+            value=float(doc_metrics_preview.get("total_energy_mwh", total_default)),
             step=10.0,
         )
-        if "total_energy_mwh" in applied_fields:
-            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
+        if "total_energy_mwh" in applied_fields and applied_source_label:
+            st.markdown(f"<span class='applied-badge'>Applied • {applied_source_label}</span>", unsafe_allow_html=True)
         cf_label = "Carbon Factor (kg CO2/kWh)" + (" ✅ Applied" if "carbon_factor" in applied_fields else "")
+        cf_default = case_study_defaults.get("carbon_factor", 0.30)
         carbon_factor = st.number_input(
             cf_label,
             min_value=0.0,
-            value=float(doc_metrics_preview.get("carbon_factor", 0.30)),
+            value=float(doc_metrics_preview.get("carbon_factor", cf_default)),
             step=0.01,
         )
-        if "carbon_factor" in applied_fields:
-            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
+        if "carbon_factor" in applied_fields and applied_source_label:
+            st.markdown(f"<span class='applied-badge'>Applied • {applied_source_label}</span>", unsafe_allow_html=True)
     with st.expander("Infrastructure Inputs", expanded=not compact_sidebar):
-        servers = st.number_input("Number of Servers", min_value=0, value=320, step=10)
+        servers_label = "Number of Servers" + (" ✅ Applied" if "servers" in applied_fields else "")
+        servers_default = int(case_study_defaults.get("servers", 320))
+        servers = st.number_input(
+            servers_label,
+            min_value=0,
+            value=int(doc_metrics_preview.get("servers", servers_default)) if doc_metrics_preview else servers_default,
+            step=10,
+        )
+        if "servers" in applied_fields and applied_source_label:
+            st.markdown(f"<span class='applied-badge'>Applied • {applied_source_label}</span>", unsafe_allow_html=True)
         cpu_label = "Average CPU Utilization (%)" + (" ✅ Applied" if "cpu_utilization" in applied_fields else "")
+        cpu_default = case_study_defaults.get("cpu_utilization", 18.0)
         cpu_utilization = st.number_input(
             cpu_label,
             min_value=0.0,
             max_value=100.0,
-            value=float(doc_metrics_preview.get("cpu_utilization", 18.0)),
+            value=float(doc_metrics_preview.get("cpu_utilization", cpu_default)),
         )
-        if "cpu_utilization" in applied_fields:
-            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
+        if "cpu_utilization" in applied_fields and applied_source_label:
+            st.markdown(f"<span class='applied-badge'>Applied • {applied_source_label}</span>", unsafe_allow_html=True)
         virt_label = "Virtualization Level (%)" + (" ✅ Applied" if "virtualization_level" in applied_fields else "")
+        virt_default = case_study_defaults.get("virtualization_level", 45.0)
         virtualization_level = st.number_input(
             virt_label,
             min_value=0.0,
             max_value=100.0,
-            value=float(doc_metrics_preview.get("virtualization_level", 45.0)),
+            value=float(doc_metrics_preview.get("virtualization_level", virt_default)),
         )
-        if "virtualization_level" in applied_fields:
-            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
+        if "virtualization_level" in applied_fields and applied_source_label:
+            st.markdown(f"<span class='applied-badge'>Applied • {applied_source_label}</span>", unsafe_allow_html=True)
     with st.expander("Cooling & Facilities", expanded=not compact_sidebar):
         cool_label = "Cooling Setpoint (°C)" + (" ✅ Applied" if "cooling_setpoint" in applied_fields else "")
+        cool_default = case_study_defaults.get("cooling_setpoint", 19.0)
         cooling_setpoint = st.number_input(
             cool_label,
             min_value=10.0,
             max_value=30.0,
-            value=float(doc_metrics_preview.get("cooling_setpoint", 19.0)),
+            value=float(doc_metrics_preview.get("cooling_setpoint", cool_default)),
         )
-        if "cooling_setpoint" in applied_fields:
-            st.markdown("<span class='applied-badge'>Applied • Data from document</span>", unsafe_allow_html=True)
-        aisle_containment = st.checkbox("Hot/Cold Aisle Containment in place", value=False)
+        if "cooling_setpoint" in applied_fields and applied_source_label:
+            st.markdown(f"<span class='applied-badge'>Applied • {applied_source_label}</span>", unsafe_allow_html=True)
+        aisle_default = bool(case_study_defaults.get("aisle_containment", False))
+        aisle_containment = st.checkbox("Hot/Cold Aisle Containment in place", value=aisle_default)
 
 doc_metrics = st.session_state.get("doc_metrics", {})
+case_defaults = case_study_defaults if use_real_case else {}
 workload_metrics = {
     "latency_ms": doc_metrics.get("latency_ms"),
     "energy_wh_inference": doc_metrics.get("energy_wh_inference"),
@@ -708,6 +969,7 @@ if doc_metrics:
     it_energy_mwh = doc_metrics.get("it_energy_mwh", it_energy_mwh)
     total_energy_mwh = doc_metrics.get("total_energy_mwh", total_energy_mwh)
     carbon_factor = doc_metrics.get("carbon_factor", carbon_factor)
+    servers = int(doc_metrics.get("servers", servers))
     cpu_utilization = doc_metrics.get("cpu_utilization", cpu_utilization)
     cooling_setpoint = doc_metrics.get("cooling_setpoint", cooling_setpoint)
     virtualization_level = doc_metrics.get("virtualization_level", virtualization_level)
@@ -720,6 +982,9 @@ if doc_metrics:
     if "carbon_factor" in doc_metrics:
         applied_params.append(f"Carbon factor applied from doc: {doc_metrics['carbon_factor']:.2f} kg CO2/kWh")
         applied_fields.add("carbon_factor")
+    if "servers" in doc_metrics:
+        applied_params.append(f"Servers applied from doc: {int(doc_metrics['servers'])}")
+        applied_fields.add("servers")
     if "cpu_utilization" in doc_metrics:
         applied_params.append(f"CPU utilization applied from doc: {doc_metrics['cpu_utilization']:.1f}%")
         applied_fields.add("cpu_utilization")
@@ -729,6 +994,20 @@ if doc_metrics:
     if "virtualization_level" in doc_metrics:
         applied_params.append(f"Virtualization level applied from doc: {doc_metrics['virtualization_level']:.1f}%")
         applied_fields.add("virtualization_level")
+elif use_real_case:
+    it_energy_mwh = case_defaults.get("it_energy_mwh", it_energy_mwh)
+    total_energy_mwh = case_defaults.get("total_energy_mwh", total_energy_mwh)
+    carbon_factor = case_defaults.get("carbon_factor", carbon_factor)
+    servers = int(case_defaults.get("servers", servers))
+    cpu_utilization = case_defaults.get("cpu_utilization", cpu_utilization)
+    cooling_setpoint = case_defaults.get("cooling_setpoint", cooling_setpoint)
+    virtualization_level = case_defaults.get("virtualization_level", virtualization_level)
+    applied_params.append(f"IT energy applied from case study: {it_energy_mwh:.0f} MWh/year")
+    applied_params.append(f"Total energy applied from case study: {total_energy_mwh:.0f} MWh/year")
+    applied_params.append(f"Carbon factor applied from case study: {carbon_factor:.3f} kg CO2/kWh")
+    applied_params.append(f"Servers applied from case study: {servers}")
+    applied_params.append(f"CPU utilization applied from case study: {cpu_utilization:.1f}%")
+    applied_params.append(f"Cooling setpoint applied from case study: {cooling_setpoint:.1f} °C")
 
 theme = "dark" if dark_mode else "light"
 if dark_mode:
@@ -1606,16 +1885,28 @@ if page == "Dashboard":
                 pue = doc_metrics["pue"]
             if "dcie" in doc_metrics:
                 dcie = doc_metrics["dcie"]
+            elif "pue" in doc_metrics and pue > 0:
+                dcie = 100 / pue
             if "co2_tonnes" in doc_metrics:
                 co2_tonnes = doc_metrics["co2_tonnes"]
-        pue_from_doc = "pue" in doc_metrics
-        dcie_from_doc = "dcie" in doc_metrics
-        co2_from_doc = ("co2_tonnes" in doc_metrics) or ("total_energy_mwh" in doc_metrics) or ("carbon_factor" in doc_metrics)
+        elif use_real_case:
+            if "pue" in case_defaults:
+                pue = case_defaults["pue"]
+            if "dcie" in case_defaults:
+                dcie = case_defaults["dcie"]
+            elif pue > 0:
+                dcie = 100 / pue
+            if "co2_tonnes" in case_defaults:
+                co2_tonnes = case_defaults["co2_tonnes"]
+        source_label = "Document" if doc_metrics else ("Case study dataset" if use_real_case else "")
+        pue_from_doc = ("pue" in doc_metrics) or ("pue" in case_defaults)
+        dcie_from_doc = ("dcie" in doc_metrics) or ("pue" in doc_metrics) or ("dcie" in case_defaults) or ("pue" in case_defaults)
+        co2_from_doc = ("co2_tonnes" in doc_metrics) or ("total_energy_mwh" in doc_metrics) or ("carbon_factor" in doc_metrics) or ("co2_tonnes" in case_defaults) or ("total_energy_mwh" in case_defaults) or ("carbon_factor" in case_defaults)
 
         metric_cols = st.columns(3)
         with metric_cols[0]:
             pue_badge = " <span class='kpi-applied'>Applied</span>" if pue_from_doc else ""
-            pue_source = "<div class='kpi-source'>Source: Document</div>" if pue_from_doc else ""
+            pue_source = f"<div class='kpi-source'>Source: {source_label}</div>" if pue_from_doc and source_label else ""
             st.markdown(
                 f"<div class='metric-card'><h3>"
                 f"<svg class='svg-icon' width='14' height='14' viewBox='0 0 24 24' fill='none' "
@@ -1625,7 +1916,7 @@ if page == "Dashboard":
             )
         with metric_cols[1]:
             dcie_badge = " <span class='kpi-applied'>Applied</span>" if dcie_from_doc else ""
-            dcie_source = "<div class='kpi-source'>Source: Document</div>" if dcie_from_doc else ""
+            dcie_source = f"<div class='kpi-source'>Source: {source_label}</div>" if dcie_from_doc and source_label else ""
             st.markdown(
                 f"<div class='metric-card'><h3>"
                 f"<svg class='svg-icon' width='14' height='14' viewBox='0 0 24 24' fill='none' "
@@ -1636,7 +1927,7 @@ if page == "Dashboard":
             )
         with metric_cols[2]:
             co2_badge = " <span class='kpi-applied'>Applied</span>" if co2_from_doc else ""
-            co2_source = "<div class='kpi-source'>Source: Document</div>" if co2_from_doc else ""
+            co2_source = f"<div class='kpi-source'>Source: {source_label}</div>" if co2_from_doc and source_label else ""
             st.markdown(
                 f"<div class='metric-card'><h3>"
                 f"<svg class='svg-icon' width='14' height='14' viewBox='0 0 24 24' fill='none' "
@@ -1652,9 +1943,15 @@ if page == "Dashboard":
             f" | Cooling Setpoint: <b>{cooling_setpoint:.1f} °C</b></div>",
             unsafe_allow_html=True,
         )
-        if doc_metrics:
+        compare_source = doc_metrics if doc_metrics else (case_study_defaults if use_real_case else {})
+        if doc_metrics or use_real_case:
+            applied_note = (
+                "Document metrics applied to KPIs and simulation."
+                if doc_metrics
+                else "Case study dataset applied to KPIs and simulation."
+            )
             st.markdown(
-                "<div class='subtle'>Document metrics applied to KPIs and simulation.</div>",
+                f"<div class='subtle'>{applied_note}</div>",
                 unsafe_allow_html=True,
             )
             if "applied_params" in locals() and applied_params:
@@ -1662,6 +1959,165 @@ if page == "Dashboard":
                 st.markdown("<div class='subtle'><b>Applied parameters</b></div>", unsafe_allow_html=True)
                 for item in applied_params[:6]:
                     st.markdown(f"<div class='subtle'>• {item}</div>", unsafe_allow_html=True)
+            course_baseline = {
+                "it_energy_mwh": 780.0,
+                "total_energy_mwh": 1300.0,
+                "carbon_factor": 0.30,
+                "servers": 320,
+                "cpu_utilization": 18.0,
+                "virtualization_level": 45.0,
+                "cooling_setpoint": 19.0,
+                "pue": 1300.0 / 780.0,
+                "dcie": (780.0 / 1300.0) * 100,
+            }
+            comparison_rows = []
+            comparison_map = [
+                ("it_energy_mwh", "IT energy", "MWh/year"),
+                ("total_energy_mwh", "Total energy", "MWh/year"),
+                ("carbon_factor", "Carbon factor", "kg CO2/kWh"),
+                ("servers", "Servers", "count"),
+                ("cpu_utilization", "CPU utilization", "%"),
+                ("virtualization_level", "Virtualization level", "%"),
+                ("cooling_setpoint", "Cooling setpoint", "°C"),
+                ("pue", "PUE", "ratio"),
+                ("dcie", "DCiE", "%"),
+            ]
+            for key, label, unit in comparison_map:
+                if key in compare_source or key in {"pue", "dcie"}:
+                    doc_val = compare_source.get(key)
+                    if key == "pue":
+                        doc_val = compare_source.get("pue", pue)
+                    if key == "dcie":
+                        doc_val = compare_source.get("dcie", dcie)
+                    base_val = course_baseline.get(key)
+                    delta_pct = ""
+                    if base_val is not None and base_val != 0 and doc_val is not None:
+                        delta_pct = f"{((doc_val - base_val) / base_val * 100):+.1f}%"
+                    comparison_rows.append(
+                        {
+                            "Parameter": f"{label} ({unit})",
+                            "Course/Exercises (test)": base_val if base_val is not None else "n/a",
+                            "Real case study": doc_val if doc_val is not None else "n/a",
+                            "Delta": delta_pct or "n/a",
+                        }
+                    )
+            if comparison_rows:
+                st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
+                render_table(pd.DataFrame(comparison_rows), "Real case study vs Course/Exercises (test)")
+            if use_real_case:
+                csv_data, csv_records = load_case_study_csv()
+                if csv_records:
+                    st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
+                    render_table(pd.DataFrame(csv_records), "Case study dataset (CSV)")
+            td_rows = load_td_validation()
+            if td_rows:
+                st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
+                render_table(pd.DataFrame(td_rows), "TD Validation (course exercises)")
+            if use_real_case:
+                case_json = load_case_study_json()
+                if case_json:
+                    st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
+                    st.markdown("<div class='section-title'>Google Case Study Insights</div>", unsafe_allow_html=True)
+                    metrics_df = pd.DataFrame(
+                        [
+                            {"Metric": "IT Energy (MWh/year)", "Value": it_energy_mwh},
+                            {"Metric": "Total Energy (MWh/year)", "Value": total_energy_mwh},
+                            {"Metric": "CO2 (t/year)", "Value": co2_tonnes},
+                            {"Metric": "PUE", "Value": pue},
+                        ]
+                    )
+                    metrics_chart = (
+                        alt.Chart(metrics_df)
+                        .mark_bar(color="#6fe5b1")
+                        .encode(
+                            x=alt.X("Metric:N", title="Metric"),
+                            y=alt.Y("Value:Q", title="Value"),
+                            tooltip=["Metric", "Value"],
+                        )
+                        .properties(height=220)
+                    )
+                    st.altair_chart(metrics_chart, use_container_width=True)
+
+                    industry_avg = case_json.get("computed_metrics", {}).get("industry_avg_pue")
+                    if industry_avg:
+                        pue_compare = pd.DataFrame(
+                            [
+                                {"Metric": "Google PUE", "Value": pue},
+                                {"Metric": "Industry Avg PUE", "Value": industry_avg},
+                            ]
+                        )
+                        pue_chart = (
+                            alt.Chart(pue_compare)
+                            .mark_bar(color="#7ea6ff")
+                            .encode(
+                                x=alt.X("Metric:N", title="Metric"),
+                                y=alt.Y("Value:Q", title="PUE (ratio)"),
+                                tooltip=["Metric", "Value"],
+                            )
+                            .properties(height=200)
+                        )
+                        st.altair_chart(pue_chart, use_container_width=True)
+
+                    opt_ctx = case_json.get("optimization_context", {})
+                    co2_target = opt_ctx.get("target_co2_tonnes")
+                    if co2_target:
+                        co2_df = pd.DataFrame(
+                            [
+                                {"Scenario": "Current CO2", "Value": co2_tonnes},
+                                {"Scenario": "Target CO2 (-25%)", "Value": co2_target},
+                            ]
+                        )
+                        co2_chart = (
+                            alt.Chart(co2_df)
+                            .mark_bar(color="#49d88c")
+                            .encode(
+                                x=alt.X("Scenario:N", title="Scenario"),
+                                y=alt.Y("Value:Q", title="CO2 (t/year)"),
+                                tooltip=["Scenario", "Value"],
+                            )
+                            .properties(height=200)
+                        )
+                        st.altair_chart(co2_chart, use_container_width=True)
+
+                    inputs = case_json.get("inputs", {})
+                    cfe_percent = inputs.get("carbon_free_energy_percent")
+                    renewable_match = inputs.get("renewable_energy_match_percent")
+                    if cfe_percent is not None:
+                        energy_mix = pd.DataFrame(
+                            [
+                                {"Type": "Carbon-free energy", "Percent": cfe_percent},
+                                {"Type": "Other energy", "Percent": max(0, 100 - float(cfe_percent))},
+                            ]
+                        )
+                        mix_chart = (
+                            alt.Chart(energy_mix)
+                            .mark_bar(color="#31c87a")
+                            .encode(
+                                x=alt.X("Type:N", title="Energy mix"),
+                                y=alt.Y("Percent:Q", title="Share (%)"),
+                                tooltip=["Type", "Percent"],
+                            )
+                            .properties(height=200)
+                        )
+                        st.altair_chart(mix_chart, use_container_width=True)
+                    elif renewable_match is not None:
+                        energy_mix = pd.DataFrame(
+                            [
+                                {"Type": "Renewables matched", "Percent": renewable_match},
+                                {"Type": "Other energy", "Percent": max(0, 100 - float(renewable_match))},
+                            ]
+                        )
+                        mix_chart = (
+                            alt.Chart(energy_mix)
+                            .mark_bar(color="#31c87a")
+                            .encode(
+                                x=alt.X("Type:N", title="Energy mix"),
+                                y=alt.Y("Percent:Q", title="Share (%)"),
+                                tooltip=["Type", "Percent"],
+                            )
+                            .properties(height=200)
+                        )
+                        st.altair_chart(mix_chart, use_container_width=True)
         st.markdown(
             "<div class='subtle'>Tip: Improve DCiE by reducing non-IT energy overheads.</div>",
             unsafe_allow_html=True,
@@ -1684,10 +2140,12 @@ if page == "Dashboard":
             for r in recommendations
         ]
         for rec in recs_data:
+            action_text = normalize_recommendation_text(rec["Action"])
+            reason_text = normalize_recommendation_text(rec["Why it helps"])
             st.markdown(
                 f"<div class='rec-card'>"
-                f"<div class='rec-title'>{action_icon_svg(rec['Action'])}{rec['Action']}</div>"
-                f"<div class='subtle'>{rec['Why it helps']}</div>"
+                f"<div class='rec-title'>{action_icon_svg(action_text)}{action_text}</div>"
+                f"<div class='subtle'>{reason_text}</div>"
                 f"<div class='rec-meta'>Estimated Saving: {rec['Estimated Saving (%)']}%</div>"
                 f"</div>",
                 unsafe_allow_html=True,
@@ -1897,11 +2355,12 @@ if page == "About":
     st.markdown(
         """
         <div class="glass">
-            <b>How to use:</b>
+            <b>How it works:</b>
             <ol>
-                <li>Enter data center inputs in the sidebar.</li>
-                <li>Review metrics and AI recommendations.</li>
-                <li>Validate the -25% target with the simulation panel.</li>
+                <li>Select the case study data source (Course exercises or Real case study).</li>
+                <li>Upload audit documents (PDF/CSV/DOCX) to auto‑extract KPIs.</li>
+                <li>Inputs are pre‑filled from documents or case study datasets.</li>
+                <li>KPIs, recommendations, and simulation update in real time.</li>
             </ol>
         </div>
         """,
@@ -1911,6 +2370,20 @@ if page == "About":
     st.markdown(
         """
         <div class="glass">
+            <b>Key features:</b>
+            <ul>
+                <li><b>Document ingestion:</b> Upload PDF/CSV/DOCX and extract PUE/DCiE/CO2 inputs.</li>
+                <li><b>Case study comparison:</b> Real company dataset vs course exercises.</li>
+                <li><b>AI recommendations:</b> Rule‑based, explainable actions.</li>
+                <li><b>Scenario simulation:</b> Validate the -25% CO2 target.</li>
+            </ul>
+            <br>
+            <b>Examples:</b>
+            <ul>
+                <li>“How to reach -25% CO2 with current inputs?”</li>
+                <li>“Compare the real case study with the course example.”</li>
+            </ul>
+            <br>
             <b>Modules:</b> frontend, energy_metrics, ai_recommendation, simulation, case_study.
             <br><br>
             <span class="badge badge-solid">Green IT</span>
@@ -1925,11 +2398,11 @@ if page == "About":
         """
         <div class="glass">
             <b>GreenAI Systems</b><br><br>
-            Gemima Ondele Pourou • Platform Architect & Frontend/Integration<br>
-            Joseph Fabrice Tsapfack • AI & Recommendation Engine<br>
-            Mike-Brady • Simulation & Validation<br>
-            Nandaa • Data & Case Study<br>
-            Pierre Joel • Documentation & QA
+            Gémima ONDELE POUROU • Platform Architect & Frontend/Integration<br>
+            Mike-Brady Mbolim Mbock • Data Processing & Energy Metrics<br>
+            Joseph Fabrice TSAPFACK • AI & Recommendation Engine<br>
+            Nandaa BALASUNDARAM • Simulation & Scenario Analysis<br>
+            Pierre Joël TAAFO • Documentation & QA
         </div>
         """,
         unsafe_allow_html=True,

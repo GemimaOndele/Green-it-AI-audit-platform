@@ -12,6 +12,8 @@
     "it_energy_mwh_per_year": 218181.82,
     "total_energy_mwh_per_year": 240000.0,
     "carbon_factor_kg_co2_per_kwh": 0.057,
+    "carbon_free_energy_percent": 64,
+    "renewable_energy_match_percent": 100,
     "num_servers_approx": 5000,
     "avg_cpu_utilization_percent": 55,
     "cooling_type": "Water-based + air cooling hybrid",
