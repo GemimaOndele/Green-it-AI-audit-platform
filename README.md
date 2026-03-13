@@ -18,6 +18,18 @@ integration of all modules into a clean, demo-ready flow.
 - Document QA block for uploaded datasets
 - Applied parameter badges and KPI source labels
 
+## 🖥️ Interface Behavior & Features (How it works)
+
+- **Navigation**: Top bar + sidebar sections (Metrics, Recommendations, Simulation, About).
+- **Case study selector**: Choose *Course exercises (test)* or *Real case study (Google)*.
+- **Inputs**: Sidebar fields are auto‑filled from documents or case study datasets.
+- **KPI cards**: PUE, DCiE, CO2 show **Applied** badges + **Source** labels.
+- **Recommendations**: Explainable, rule‑based actions with estimated savings.
+- **Simulation**: Before/After energy scenario to validate the -25% CO2 target.
+- **Documents**: Upload PDF/CSV/DOCX; extraction applies metrics automatically.
+- **Document QA**: Analyze workload benchmarks separately from audit KPIs.
+- **Insights & graphs**: Clear charts with labeled axes (CO2 current vs target, energy mix, PUE comparison).
+
 ## 🧩 Modules Integrated
 
 - `frontend/` : Streamlit UI and user flow
