@@ -41,6 +41,27 @@ lightweight, modular system that favors proportional computing and transparent l
 - **Document QA**: Analyze workload benchmarks separately from audit KPIs.
 - **Insights & graphs**: Clear charts with labeled axes (CO2 current vs target, energy mix, PUE comparison).
 
+## 🧾 Mike‑Brady Module (Energy Metrics & Validation)
+
+**Purpose**: Implement all Green IT formulas, validate them against course TDs, and provide
+real case-study datasets for the platform.
+
+**How it works**:
+- Uses deterministic formulas to compute **PUE**, **DCiE**, **annual energy**, and **CO2**.
+- Validates calculations against `case_study/td_validation.json` (course exercises).
+- Ships a real company case study (Google) via CSV/JSON and a short report.
+
+**What it provides**:
+- `energy_metrics/metrics.py` with core formulas.
+- `case_study/google_case_study.csv` and `case_study/google_case_study.json`.
+- `case_study/td_validation.json` for formula verification.
+- `docs/google_case_study_report.docx` as the short report.
+
+**How to run / test this part**:
+- Run the app: `streamlit run frontend/app.py`
+- In the sidebar, choose **Real case study (Google)** to load Mike’s dataset.
+- Verify metrics match TDs using the **TD Validation** table.
+
 ## ▶️ Run Command
 
 Start the app locally with:
