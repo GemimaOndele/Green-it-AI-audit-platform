@@ -29,7 +29,9 @@ lightweight, modular system that favors proportional computing and transparent l
 - 🧾 Document QA for workload benchmarks and audit scenarios
 - ✅ Applied parameter tagging and KPI source badges
 
-## 🖥️ Interface Behavior & Features (How it works)
+## Responsible: Gémima ONDELE POUROU — Platform Architect & Frontend/Integration
+
+### Module: 🖥️ Interface Behavior & Features (How it works)
 
 - **Navigation**: Top bar + sidebar sections (Metrics, Recommendations, Simulation, About).
 - **Case study selector**: Choose *Course exercises (test)* or *Real case study (Google)*.
@@ -41,7 +43,9 @@ lightweight, modular system that favors proportional computing and transparent l
 - **Document QA**: Analyze workload benchmarks separately from audit KPIs.
 - **Insights & graphs**: Clear charts with labeled axes (CO2 current vs target, energy mix, PUE comparison).
 
-## 🧾 Mike‑Brady Module (Energy Metrics & Validation)
+## Responsible: Mike‑Brady MBOLIM MBOCK — Data Processing & Energy Metrics Engineer
+
+### Module: 🧾 Energy Metrics & Validation
 
 **Purpose**: Implement all Green IT formulas, validate them against course TDs, and provide
 real case-study datasets for the platform.
