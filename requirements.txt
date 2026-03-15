@@ -1,8 +1,2 @@
 streamlit
 pandas
-altair
-huggingface_hub
-pypdf
-python-docx
-python-dotenv
-pytest
