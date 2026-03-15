@@ -118,6 +118,9 @@ class AuditContext:
         """Validate context data and return list of issues"""
         issues = []
         
+        # NOTE: total_energy_mwh and it_energy_mwh are validated elsewhere
+        # (InsufficientDataError) to allow the engine to compute deficits.
+        
         if self.carbon_factor_kg_per_kwh <= 0:
             issues.append("carbon_factor_kg_per_kwh must be positive")
         

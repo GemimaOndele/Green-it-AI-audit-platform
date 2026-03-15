@@ -1,3 +1,5 @@
 __pycache__/
 *.pyc
 .greenit/
+.env
+uploaded_docs/

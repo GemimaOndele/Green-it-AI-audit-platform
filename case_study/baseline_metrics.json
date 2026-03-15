@@ -1,0 +1,12 @@
+{
+  "it_power_kw": 500,
+  "it_energy_mwh": 4380.0,
+  "total_energy_mwh": 7884.0,
+  "carbon_factor": 0.057,
+  "pue": 1.8,
+  "dcie_percent": 55.5556,
+  "co2_tonnes_per_year": 449.388,
+  "pue_rating": "Average",
+  "pue_description": "Moderate efficiency \u2014 optimization recommended",
+  "action_needed": true
+}

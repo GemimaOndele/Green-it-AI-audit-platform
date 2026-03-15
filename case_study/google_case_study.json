@@ -1,0 +1,38 @@
+{
+  "meta": {
+    "company": "Google LLC",
+    "scope": "One representative data center campus (1% of Google global fleet, 2023)",
+    "source": "Google Environmental Report 2024 (official)",
+    "url": "https://blog.google/company-news/outreach-and-initiatives/sustainability/2024-environmental-report/",
+    "year": 2023,
+    "author": "Mike-Brady Mbolim Mbock \u2014 GreenAI Systems"
+  },
+  "inputs": {
+    "it_power_kw": 24906.6,
+    "it_energy_mwh_per_year": 218181.82,
+    "total_energy_mwh_per_year": 240000.0,
+    "carbon_factor_kg_co2_per_kwh": 0.057,
+    "num_servers_approx": 5000,
+    "avg_cpu_utilization_percent": 55,
+    "cooling_type": "Water-based + air cooling hybrid",
+    "cooling_setpoint_celsius": 27,
+    "aisle_containment": true,
+    "location": "Multi-site (Oregon / Belgium / Finland representative)"
+  },
+  "computed_metrics": {
+    "pue": 1.1,
+    "dcie_percent": 90.9091,
+    "co2_tonnes_per_year": 13680.0,
+    "annual_it_energy_mwh": 218181.82,
+    "pue_rating": "Excellent",
+    "industry_avg_pue": 1.56,
+    "pue_vs_industry": "Google PUE 1.1 vs industry avg 1.56 \u2014 29.5% more efficient"
+  },
+  "optimization_context": {
+    "baseline_pue": 1.1,
+    "target_co2_reduction_percent": 25,
+    "target_co2_tonnes": 10260.0,
+    "co2_to_save_tonnes": 3420.0,
+    "notes": "Google already achieves Excellent PUE. For the -25% CO2 target, gains come from grid decarbonization and renewable energy, not further PUE improvement."
+  }
+}
