@@ -8,7 +8,7 @@ from ..models import (
     AuditContext, Recommendation, 
     DifficultyLevel, ImpactLevel, Category
 )
-
+from ..engine import RecommendationEngine
 
 def get_cooling_recommendations(context: AuditContext) -> List[Recommendation]:
     """
