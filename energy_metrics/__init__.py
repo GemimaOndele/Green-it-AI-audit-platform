@@ -1,3 +1,8 @@
-from .metrics import calculate_co2_tonnes, calculate_dcie, calculate_pue
+from .metrics import calculate_co2_tonnes, calculate_dcie, calculate_pue, calculate_all_metrics
 
-__all__ = ["calculate_pue", "calculate_dcie", "calculate_co2_tonnes"]
+__all__ = [
+    "calculate_pue",
+    "calculate_dcie",
+    "calculate_co2_tonnes",
+    "calculate_all_metrics",
+]

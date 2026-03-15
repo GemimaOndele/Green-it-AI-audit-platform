@@ -23,8 +23,12 @@ if load_dotenv:
     load_dotenv(os.path.join(PROJECT_ROOT, ".greenit", ".env"))
     load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
 
-from ai_recommendation import build_recommendations
-from energy_metrics import calculate_co2_tonnes, calculate_dcie, calculate_pue
+from ai_recommendation import (
+    build_recommendations as legacy_build_recommendations,
+    RecommendationEngine,
+    AuditContext,
+)
+from energy_metrics import calculate_co2_tonnes, calculate_dcie, calculate_pue, calculate_all_metrics
 from simulation import simulate_actions
 
 logging.getLogger("pypdf").setLevel(logging.ERROR)
@@ -222,6 +226,9 @@ def get_case_study_defaults() -> dict:
     aisle_containment = inputs.get("aisle_containment")
     if isinstance(aisle_containment, bool):
         defaults["aisle_containment"] = aisle_containment
+    cooling_type = inputs.get("cooling_type")
+    if isinstance(cooling_type, str) and cooling_type.strip():
+        defaults["cooling_type"] = cooling_type.strip().lower()
 
     return defaults
 
@@ -2125,20 +2132,51 @@ if page == "Dashboard":
 
     with recs_col:
         st.markdown("<div id='recommendations' class='section-title'>AI Recommendations</div>", unsafe_allow_html=True)
-        recommendations = build_recommendations(
-            cpu_utilization_pct=cpu_utilization,
-            cooling_setpoint_c=cooling_setpoint,
-            has_aisle_containment=aisle_containment,
-            virtualization_level_pct=virtualization_level,
+        it_power_kw = (it_energy_mwh * 1000.0) / 8760.0 if it_energy_mwh else 0.0
+        metrics_dict = calculate_all_metrics(
+            it_power_kw=it_power_kw,
+            total_energy_mwh=total_energy_mwh,
+            carbon_factor_kg_per_kwh=carbon_factor,
+            it_energy_mwh=it_energy_mwh,
         )
-        recs_data = [
-            {
-                "Action": r.title,
-                "Why it helps": r.reason,
-                "Estimated Saving (%)": r.estimated_saving_pct,
-            }
-            for r in recommendations
-        ]
+        ui_inputs = {
+            "servers": servers,
+            "cpu_utilization_pct": cpu_utilization,
+            "cooling_setpoint_c": cooling_setpoint,
+            "has_aisle_containment": aisle_containment,
+            "virtualization_level_pct": virtualization_level,
+            "cooling_type": case_study_defaults.get("cooling_type", "air"),
+            "use_ml_ranking": False,
+        }
+        engine = RecommendationEngine(verbose=False)
+        try:
+            context = AuditContext.from_metrics_and_ui(metrics_dict, ui_inputs)
+            result = engine.generate_recommendations(context)
+            recommendations = result.recommendations
+        except Exception:
+            recommendations = legacy_build_recommendations(
+                cpu_utilization_pct=cpu_utilization,
+                cooling_setpoint_c=cooling_setpoint,
+                has_aisle_containment=aisle_containment,
+                virtualization_level_pct=virtualization_level,
+            )
+        recs_data = []
+        for rec in recommendations:
+            if hasattr(rec, "logic_explanation"):
+                reason = rec.logic_explanation or rec.description
+                estimated = rec.estimated_saving_pct
+                title = rec.title
+            else:
+                reason = rec.reason
+                estimated = rec.estimated_saving_pct
+                title = rec.title
+            recs_data.append(
+                {
+                    "Action": title,
+                    "Why it helps": reason,
+                    "Estimated Saving (%)": estimated,
+                }
+            )
         for rec in recs_data:
             action_text = normalize_recommendation_text(rec["Action"])
             reason_text = normalize_recommendation_text(rec["Why it helps"])
