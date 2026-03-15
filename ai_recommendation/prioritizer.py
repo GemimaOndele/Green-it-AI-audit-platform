@@ -4,11 +4,13 @@ Recommendation prioritization logic for Nandaa's simulation engine.
 
 from typing import List
 from .models import Recommendation, AuditContext, DifficultyLevel
+from .ml_ranker import rank_recommendations_ml
 
 
 def prioritize_recommendations(
     recommendations: List[Recommendation],
-    context: AuditContext
+    context: AuditContext,
+    use_ml_ranking: bool = False
 ) -> List[Recommendation]:
     """
     Prioritize recommendations for Nandaa's simulation engine.
@@ -62,13 +64,16 @@ def prioritize_recommendations(
         
         return score
     
+    if use_ml_ranking:
+        return rank_recommendations_ml(recommendations, context)
+
     # Sort by priority score descending
     sorted_recs = sorted(
         recommendations,
         key=calculate_priority_score,
         reverse=True
     )
-    
+
     return sorted_recs
 
 

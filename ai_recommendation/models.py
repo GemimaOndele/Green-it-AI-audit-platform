@@ -69,6 +69,7 @@ class AuditContext:
     avg_server_age_years: Optional[float] = None
     renewable_energy_pct: Optional[float] = None
     energy_cost_per_kwh: float = 0.12  # Default EUR/kWh
+    use_ml_ranking: bool = False
     
     @classmethod
     def from_metrics_and_ui(cls, metrics_dict: Dict[str, Any], ui_inputs: Dict[str, Any]) -> 'AuditContext':
@@ -111,7 +112,8 @@ class AuditContext:
             cooling_setpoint_c=ui_inputs.get('cooling_setpoint_c', 20.0),
             has_aisle_containment=ui_inputs.get('has_aisle_containment', False),
             virtualization_level_pct=ui_inputs.get('virtualization_level_pct', 0),
-            cooling_type=ui_inputs.get('cooling_type', 'air')
+            cooling_type=ui_inputs.get('cooling_type', 'air'),
+            use_ml_ranking=ui_inputs.get('use_ml_ranking', False)
         )
     
     def validate(self) -> List[str]:

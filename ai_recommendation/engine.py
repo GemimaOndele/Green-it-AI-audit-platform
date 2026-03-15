@@ -94,7 +94,11 @@ class RecommendationEngine:
             self._add_benchmark_comparison(all_recs, context)
         
         # Step 5: Prioritize for Nandaa's simulation
-        prioritized = prioritize_recommendations(all_recs, context)
+        prioritized = prioritize_recommendations(
+            all_recs,
+            context,
+            use_ml_ranking=getattr(context, "use_ml_ranking", False)
+        )
         
         # Step 6: Check if 25% CO2 reduction target is achievable
         total_co2_savings = sum(r.co2_savings_tonnes for r in prioritized)

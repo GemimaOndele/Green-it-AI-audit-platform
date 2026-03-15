@@ -140,10 +140,16 @@ class TestRecommendationEngine(unittest.TestCase):
         """Test that recommendations are properly prioritized"""
         result = self.engine.generate_recommendations(self.valid_context)
         
-        # First recommendation should be easy/medium difficulty
+        # First recommendation should be easy/medium difficulty under heuristic ranking
         if result.recommendations:
             first_rec = result.recommendations[0]
             self.assertIn(first_rec.difficulty, [DifficultyLevel.EASY, DifficultyLevel.MEDIUM])
+
+    def test_ml_ranking_does_not_break(self):
+        """Test that ML ranking runs without errors"""
+        self.valid_context.use_ml_ranking = True
+        result = self.engine.generate_recommendations(self.valid_context)
+        self.assertGreater(len(result.recommendations), 0)
     
     def test_zero_energy_raises_error(self):
         """Test that zero total energy raises error"""
