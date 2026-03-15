@@ -152,13 +152,13 @@ class Recommendation:
     
     # Savings (relative and absolute)
     estimated_saving_pct: float
+    difficulty: DifficultyLevel
+    impact_level: ImpactLevel
     co2_savings_tonnes: float = 0.0  # Will be calculated by engine
     energy_savings_mwh: float = 0.0   # Will be calculated by engine
     cost_savings_eur: float = 0.0     # Will be calculated by engine
     
     # Implementation details
-    difficulty: DifficultyLevel
-    impact_level: ImpactLevel
     prerequisites: List[str] = field(default_factory=list)
     steps: List[str] = field(default_factory=list)
     

@@ -6,9 +6,9 @@ Based on industry benchmarks and Mike-Brady's metrics.
 from typing import List
 from ..models import (
     AuditContext, Recommendation, 
-    DifficultyLevel, ImpactLevel, Category
+    DifficultyLevel, ImpactLevel, Category,
+    INDUSTRY_AVG_PUE
 )
-from ..engine import RecommendationEngine
 
 def get_power_recommendations(context: AuditContext) -> List[Recommendation]:
     """
@@ -45,7 +45,7 @@ def get_power_recommendations(context: AuditContext) -> List[Recommendation]:
                 ],
                 logic_explanation=(
                     f"Your PUE of {context.pue:.2f} indicates significant non-IT energy waste. "
-                    f"The industry average is {RecommendationEngine.INDUSTRY_AVG_PUE}. "
+                    f"The industry average is {INDUSTRY_AVG_PUE}. "
                     "Reducing to 1.5 could save 15-20% of total energy."
                 ),
                 references=[

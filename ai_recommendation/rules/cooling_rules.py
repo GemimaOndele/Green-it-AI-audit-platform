@@ -6,9 +6,9 @@ Based on ASHRAE guidelines and Google case study benchmarks.
 from typing import List
 from ..models import (
     AuditContext, Recommendation, 
-    DifficultyLevel, ImpactLevel, Category
+    DifficultyLevel, ImpactLevel, Category,
+    GOOGLE_PUE
 )
-from ..engine import RecommendationEngine
 
 def get_cooling_recommendations(context: AuditContext) -> List[Recommendation]:
     """
@@ -142,7 +142,7 @@ def get_cooling_recommendations(context: AuditContext) -> List[Recommendation]:
                 ],
                 logic_explanation=(
                     f"Your current PUE of {context.pue:.2f} is significantly above "
-                    f"Google's {RecommendationEngine.GOOGLE_PUE:.1f}. Air-cooled facilities "
+                    f"Google's {GOOGLE_PUE:.1f}. Air-cooled facilities "
                     "typically achieve PUE 1.4-1.6 at best. Water/hybrid cooling can reach 1.1-1.2. "
                     "The 15% energy reduction estimate is conservative for this upgrade."
                 ),

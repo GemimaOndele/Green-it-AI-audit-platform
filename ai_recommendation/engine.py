@@ -9,7 +9,8 @@ from datetime import datetime
 
 from .models import (
     AuditContext, Recommendation, RecommendationResult,
-    DifficultyLevel, ImpactLevel, Category
+    DifficultyLevel, ImpactLevel, Category,
+    GOOGLE_PUE, INDUSTRY_AVG_PUE
 )
 from .rules.cooling_rules import get_cooling_recommendations
 from .rules.it_rules import get_it_recommendations
@@ -29,10 +30,6 @@ class RecommendationEngine:
     4. Prioritizes for Nandaa's simulation
     5. Formats for Gemima's frontend
     """
-    
-    # Industry benchmarks from Mike-Brady's case studies
-    GOOGLE_PUE = 1.1  # From google_case_study.json
-    INDUSTRY_AVG_PUE = 1.56  # From google_case_study.json
     
     def __init__(self, verbose: bool = False):
         """
