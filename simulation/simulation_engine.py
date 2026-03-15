@@ -60,16 +60,31 @@ def simulate_single_action(baseline_data, action_name, saving_pct=0, new_pue=Non
     }
 
 
-def simulate_combined_actions(baseline_data):
+def simulate_combined_actions(baseline_data, action_params=None):
+    action_params = action_params or {}
+
+    consolidation_pct = action_params.get(
+        "server_consolidation_pct",
+        SERVER_CONSOLIDATION_PCT,
+    )
+    virtualization_pct = action_params.get(
+        "virtualization_pct",
+        VIRTUALIZATION_PCT,
+    )
+    cooling_pue = action_params.get(
+        "cooling_optimization_pue",
+        COOLING_OPTIMIZATION_PUE,
+    )
+
     baseline_it_energy = baseline_data["it_energy_mwh"]
     baseline_total_energy = baseline_data["total_energy_mwh"]
     baseline_co2 = baseline_data["co2_tonnes_per_year"]
     carbon_factor = baseline_data["carbon_factor"]
 
-    it_after_consolidation = baseline_it_energy * (1 - SERVER_CONSOLIDATION_PCT / 100)
-    it_after_virtualization = it_after_consolidation * (1 - VIRTUALIZATION_PCT / 100)
+    it_after_consolidation = baseline_it_energy * (1 - consolidation_pct / 100)
+    it_after_virtualization = it_after_consolidation * (1 - virtualization_pct / 100)
 
-    final_total_energy = it_after_virtualization * COOLING_OPTIMIZATION_PUE
+    final_total_energy = it_after_virtualization * cooling_pue
     final_co2 = calculate_co2(final_total_energy, carbon_factor)
 
     energy_saved = baseline_total_energy - final_total_energy
@@ -88,29 +103,47 @@ def simulate_combined_actions(baseline_data):
     }
 
 
-def run_simulation(input_data=None):
+def run_simulation(input_data=None, action_params=None):
     baseline_data = input_data if input_data is not None else load_baseline_data()
+
+    action_params = action_params or {}
+
+    consolidation_pct = action_params.get(
+        "server_consolidation_pct",
+        SERVER_CONSOLIDATION_PCT,
+    )
+    virtualization_pct = action_params.get(
+        "virtualization_pct",
+        VIRTUALIZATION_PCT,
+    )
+    cooling_pue = action_params.get(
+        "cooling_optimization_pue",
+        COOLING_OPTIMIZATION_PUE,
+    )
 
     single_actions = [
         simulate_single_action(
             baseline_data,
             action_name="Server Consolidation",
-            saving_pct=SERVER_CONSOLIDATION_PCT,
+            saving_pct=consolidation_pct,
         ),
         simulate_single_action(
             baseline_data,
             action_name="Virtualization",
-            saving_pct=VIRTUALIZATION_PCT,
+            saving_pct=virtualization_pct,
         ),
         simulate_single_action(
             baseline_data,
             action_name="Cooling Optimization",
             saving_pct=0,
-            new_pue=COOLING_OPTIMIZATION_PUE,
+            new_pue=cooling_pue,
         ),
     ]
 
-    combined = simulate_combined_actions(baseline_data)
+    combined = simulate_combined_actions(
+        baseline_data,
+        action_params=action_params,
+    )
 
     return {
         "baseline": baseline_data,
