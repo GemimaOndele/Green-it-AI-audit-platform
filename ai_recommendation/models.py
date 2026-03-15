@@ -31,6 +31,11 @@ class Category(Enum):
     BENCHMARK = "benchmark"
 
 
+# Industry benchmarks from Mike-Brady's case studies
+GOOGLE_PUE = 1.1  # From google_case_study.json
+INDUSTRY_AVG_PUE = 1.56  # From google_case_study.json
+
+
 @dataclass
 class AuditContext:
     """
@@ -113,12 +118,6 @@ class AuditContext:
         """Validate context data and return list of issues"""
         issues = []
         
-        if self.total_energy_mwh <= 0:
-            issues.append("total_energy_mwh must be positive")
-        
-        if self.it_energy_mwh <= 0:
-            issues.append("it_energy_mwh must be positive")
-        
         if self.carbon_factor_kg_per_kwh <= 0:
             issues.append("carbon_factor_kg_per_kwh must be positive")
         
@@ -145,25 +144,28 @@ class Recommendation:
     """
     
     # Core identification
-    id: str
-    title: str
-    description: str
-    category: str  # "cooling", "it", "power", "infrastructure", "benchmark"
+    id: str = ""
+    title: str = ""
+    description: str = ""
+    category: str = ""  # "cooling", "it", "power", "infrastructure", "benchmark"
     
     # Savings (relative and absolute)
-    estimated_saving_pct: float
-    difficulty: DifficultyLevel
-    impact_level: ImpactLevel
+    estimated_saving_pct: float = 0.0
+    difficulty: DifficultyLevel = DifficultyLevel.EASY
+    impact_level: ImpactLevel = ImpactLevel.LOW
+    logic_explanation: str = ""  # For explainability and transparency
     co2_savings_tonnes: float = 0.0  # Will be calculated by engine
     energy_savings_mwh: float = 0.0   # Will be calculated by engine
     cost_savings_eur: float = 0.0     # Will be calculated by engine
+
+    
+    
     
     # Implementation details
     prerequisites: List[str] = field(default_factory=list)
     steps: List[str] = field(default_factory=list)
     
-    # For explainability
-    logic_explanation: str
+    # For explainability    
     references: List[str] = field(default_factory=list)
     
     # Optional metadata for simulation

@@ -90,7 +90,7 @@ class RecommendationEngine:
             rec.cost_savings_eur = rec.energy_savings_mwh * 1000 * context.energy_cost_per_kwh
         
         # Step 4: Add benchmark comparison if relevant
-        if context.pue > self.INDUSTRY_AVG_PUE:
+        if context.pue > INDUSTRY_AVG_PUE:
             self._add_benchmark_comparison(all_recs, context)
         
         # Step 5: Prioritize for Nandaa's simulation
@@ -127,8 +127,8 @@ class RecommendationEngine:
                 id="BENCH-001",
                 title="Benchmark Against Industry Leaders",
                 description=(
-                    f"Your PUE of {context.pue:.2f} is above Google's {self.GOOGLE_PUE} "
-                    f"and industry average of {self.INDUSTRY_AVG_PUE}. Study their best practices: "
+                    f"Your PUE of {context.pue:.2f} is above Google's {GOOGLE_PUE} "
+                    f"and industry average of {INDUSTRY_AVG_PUE}. Study their best practices: "
                     "free cooling, aisle containment, and AI-based optimization."
                 ),
                 category=Category.BENCHMARK.value,
@@ -143,7 +143,7 @@ class RecommendationEngine:
                     "Create improvement roadmap"
                 ],
                 logic_explanation=(
-                    f"Industry leaders like Google achieve PUE {self.GOOGLE_PUE} through "
+                    f"Industry leaders like Google achieve PUE {GOOGLE_PUE} through "
                     "comprehensive optimization. Learning from them can help identify "
                     "improvement opportunities for your facility."
                 ),
@@ -188,6 +188,7 @@ class RecommendationEngine:
             'target_25pct_co2_tonnes': round(target_25pct, 2),
             'target_gap_tonnes': round(max(0, target_25pct - total_co2_savings), 2),
             'target_progress_pct': round(min(100, (total_co2_savings / target_25pct * 100) if target_25pct > 0 else 0), 1),
+            'target_25pct_achievable': total_co2_savings >= target_25pct,
             'by_difficulty': by_difficulty,
             'by_category': by_category,
             'top_recommendations': [r.title for r in top_3],
@@ -208,7 +209,7 @@ class RecommendationEngine:
             'cooling_setpoint_c': context.cooling_setpoint_c,
             'has_aisle_containment': context.has_aisle_containment,
             'virtualization_level_pct': context.virtualization_level_pct,
-            'google_benchmark_pue': self.GOOGLE_PUE,
-            'industry_avg_pue': self.INDUSTRY_AVG_PUE,
+            'google_benchmark_pue': GOOGLE_PUE,
+            'industry_avg_pue': INDUSTRY_AVG_PUE,
             'generated_at': datetime.now().isoformat()
         }
