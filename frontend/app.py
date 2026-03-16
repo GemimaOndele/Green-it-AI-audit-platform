@@ -29,7 +29,7 @@ from ai_recommendation import (
     AuditContext,
 )
 from energy_metrics import calculate_co2_tonnes, calculate_dcie, calculate_pue, calculate_all_metrics
-from simulation import simulate_actions
+from simulation import get_simulation_results
 
 logging.getLogger("pypdf").setLevel(logging.ERROR)
 warnings.filterwarnings("ignore", message="Ignoring wrong pointing object*")
@@ -2236,29 +2236,105 @@ if page == "Dashboard":
             st.markdown(f"<div class='subtle'>• {item}</div>", unsafe_allow_html=True)
 
     st.markdown("<div id='simulation' class='section-title'>Before / After Simulation</div>", unsafe_allow_html=True)
-    actions = [{"estimated_saving_pct": r.estimated_saving_pct} for r in recommendations]
-    simulation = simulate_actions(total_energy_mwh, actions)
+    action_params = {}
+    for rec in recommendations:
+        title = rec.title.lower() if hasattr(rec, "title") and rec.title else ""
+        saving = rec.estimated_saving_pct if hasattr(rec, "estimated_saving_pct") else None
+        if saving is None:
+            continue
+        if "consolidation" in title:
+            action_params["server_consolidation_pct"] = saving
+        elif "virtualization" in title:
+            action_params["virtualization_pct"] = saving
+        elif "cooling" in title or "setpoint" in title:
+            if pue and pue > 0:
+                action_params["cooling_optimization_pue"] = max(1.1, pue * (1 - saving / 100))
 
-    sim_df = pd.DataFrame(
-        [
-            {"Scenario": "Baseline", "Energy (MWh/year)": simulation["initial_energy_mwh"]},
-            {
-                "Scenario": "After Actions",
-                "Energy (MWh/year)": simulation["remaining_energy_mwh"],
-            },
-        ]
-    )
-    st.bar_chart(sim_df.set_index("Scenario"))
+    baseline_data = {
+        "it_power_kw": it_power_kw,
+        "it_energy_mwh": it_energy_mwh,
+        "total_energy_mwh": total_energy_mwh,
+        "carbon_factor": carbon_factor,
+        "pue": pue,
+        "dcie_percent": dcie,
+        "co2_tonnes_per_year": co2_tonnes,
+    }
+    simulation = get_simulation_results(input_data=baseline_data, action_params=action_params)
+    baseline = simulation["baseline"]
+    single_actions = simulation["single_actions"]
+    combined = simulation["combined"]
 
+    comparison_df = pd.DataFrame([
+        {
+            "Metric": "Total Energy (MWh/year)",
+            "Baseline": baseline["total_energy_mwh"],
+            "Optimized": combined["optimized_energy_mwh"],
+        },
+        {
+            "Metric": "CO2 Emissions (t/year)",
+            "Baseline": baseline["co2_tonnes_per_year"],
+            "Optimized": combined["optimized_co2_tonnes"],
+        },
+        {
+            "Metric": "Energy Saved (MWh/year)",
+            "Baseline": 0,
+            "Optimized": combined["energy_saved_mwh"],
+        },
+        {
+            "Metric": "CO2 Saved (t/year)",
+            "Baseline": 0,
+            "Optimized": combined["co2_saved_tonnes"],
+        },
+        {
+            "Metric": "Reduction (%)",
+            "Baseline": 0,
+            "Optimized": combined["reduction_percent"],
+        },
+    ])
+
+    st.subheader("Baseline vs Optimized Comparison")
+    st.dataframe(comparison_df, use_container_width=True)
+
+    actions_df = pd.DataFrame([
+        {
+            "Action": a["action_name"],
+            "Energy Saved (MWh/year)": a["energy_saved_mwh"],
+            "CO2 Saved (t/year)": a["co2_saved_tonnes"],
+        }
+        for a in single_actions
+    ])
+
+    st.subheader("Savings by Action")
+    st.dataframe(actions_df, use_container_width=True)
+
+    energy_chart_df = pd.DataFrame([
+        {"Scenario": "Baseline", "Energy (MWh/year)": baseline["total_energy_mwh"]},
+        {"Scenario": "Optimized", "Energy (MWh/year)": combined["optimized_energy_mwh"]},
+    ])
+
+    st.subheader("Baseline vs Optimized Energy")
+    st.bar_chart(energy_chart_df.set_index("Scenario"))
+
+    action_chart_df = pd.DataFrame([
+        {"Action": a["action_name"], "Energy Saved (MWh/year)": a["energy_saved_mwh"]}
+        for a in single_actions
+    ])
+
+    st.subheader("Energy Saved per Action")
+    st.bar_chart(action_chart_df.set_index("Action"))
+
+    st.subheader("Target Validation")
     st.markdown(
-        f"<div class='section'>Estimated total savings: <b>{simulation['total_savings_mwh']:.1f} MWh/year</b>"
-        f" ({simulation['total_savings_pct']:.1f}%)</div>",
-        unsafe_allow_html=True,
+        f"""
+        CO2 Reduction Achieved: **{combined['reduction_percent']:.2f}%**  
+        Target: **25%**  
+        Status: **{'Achieved' if combined['target_achieved'] else 'Not achieved'}**
+        """
     )
-    if simulation["total_savings_pct"] >= 25:
-        st.success("Target -25% CO2 is achievable with these actions.")
+    if combined["target_achieved"]:
+        st.success("Target -25% CO2 is achieved.")
     else:
-        st.info("Target -25% CO2 not reached. Adjust the action set.")
+        st.warning("Target -25% CO2 is not achieved.")
     doc_texts = st.session_state.get("doc_texts", [])
     if doc_texts:
         inputs = extract_workload_inputs("\n".join(doc_texts))
