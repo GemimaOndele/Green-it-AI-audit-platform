@@ -54,16 +54,40 @@ lightweight, modular system that favors proportional computing and transparent l
 - **Pierre Joel Taafo** (Energy & Sustainability)
   - Energy assumptions, ISO 50001 alignment, validation
 
+## 🧠 Module: AI & Recommendation Engine (Joseph Fabrice Tsapfack)
+
+- **Purpose**: Convert Green IT rules into explainable, prioritized actions.
+- **How it works**:
+  - Applies thresholds (CPU, cooling, virtualization, PUE) to trigger actions.
+  - Adds reasons and estimated savings for each recommendation.
+  - Optional ML ranking (lightweight) can reorder actions by impact.
+
+## 📈 Module: Simulation & Scenario Analysis (Balasundaram Nandaa)
+
+- **Purpose**: Validate the -25% CO2 target through before/after scenarios.
+- **How it works**:
+  - Computes savings per action (MWh/year, tCO2/year).
+  - Combines actions into a single optimized scenario.
+  - Produces comparison tables and charts for the dashboard.
+
+## 🌱 Module: Energy Validation & Assumptions (Pierre Joel Taafo)
+
+- **Purpose**: Ensure realistic energy assumptions and ISO 50001 coherence.
+- **How it works**:
+  - Defines ranges for cooling savings, setpoint impact, and electrical losses.
+  - Validates that the -25% trajectory is credible and non-exaggerated.
+  - Provides non-technical sustainability justification for reporting.
+
 ## 🌱 Branch Strategy
 
 - `main` : stable demo version
 - `dev` : integration branch
 - Feature branches:
-  - `feature/frontend-dashboard` (Gemima)
-  - `feature/energy-metrics` (Mike-Brady)
-  - `feature/ai-recommendation` (Joseph)
-  - `feature/simulation-engine` (Nandaa)
-  - `feature/energy-validation` (Pierre Joel)
+  - `feature/frontend-dashboard` (Gemima) — UI/UX, dashboard integration
+  - `feature/energy-metrics` (Mike-Brady) — formulas, case study datasets
+  - `feature/ai-recommendation` (Joseph) — rules engine, explainability, ML ranking
+  - `feature/simulation-engine` (Nandaa) — before/after scenarios, charts
+  - `feature/energy-validation` (Pierre Joel) — assumptions, ISO 50001 validation
 
 ## 🛠️ Tools and Stack
 
