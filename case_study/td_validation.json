@@ -1,0 +1,53 @@
+{
+  "validation_results": [
+    {
+      "test_id": "TD-01",
+      "description": "PUE from IT=780 MWh, Total=1300 MWh (course example)",
+      "formula": "PUE = Total / IT = 1300 / 780",
+      "expected": 1.6667,
+      "computed": 1.6667,
+      "match": true
+    },
+    {
+      "test_id": "TD-02",
+      "description": "DCiE from IT=780 MWh, Total=1300 MWh",
+      "formula": "DCiE = (IT / Total) \u00d7 100 = (780/1300) \u00d7 100",
+      "expected": 60.0,
+      "computed": 60.0,
+      "match": true
+    },
+    {
+      "test_id": "TD-03",
+      "description": "CO2 from 1300 MWh, factor=0.30 kgCO2/kWh",
+      "formula": "CO2 = 1300 \u00d7 1000 \u00d7 0.30 / 1000 = 390 tCO2",
+      "expected": 390.0,
+      "computed": 390.0,
+      "match": true
+    },
+    {
+      "test_id": "TD-04",
+      "description": "Annual energy from 200 kW IT load",
+      "formula": "E = 200 kW \u00d7 8760h / 1000 = 1752 MWh/year",
+      "expected": 1752.0,
+      "computed": 1752.0,
+      "match": true
+    },
+    {
+      "test_id": "TD-05",
+      "description": "Google campus: PUE = 1.10",
+      "formula": "PUE = 240000.0 / 218181.82",
+      "expected": 1.1,
+      "computed": 1.1,
+      "match": true
+    },
+    {
+      "test_id": "TD-06",
+      "description": "Google campus: DCiE = 90.91%",
+      "formula": "DCiE = (218181.82/240000.0) \u00d7 100",
+      "expected": 90.91,
+      "computed": 90.9091,
+      "match": true
+    }
+  ],
+  "all_pass": true
+}

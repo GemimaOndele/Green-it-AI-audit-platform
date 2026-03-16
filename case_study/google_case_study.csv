@@ -1,0 +1,16 @@
+field,value,unit,source
+company,Google LLC,-,Google Environmental Report 2024
+year,2023,-,Google Environmental Report 2024
+it_power_kw,24906.6,kW,Derived: IT MWh / 8760h
+it_energy_mwh_per_year,218181.82,MWh/year,Derived: Total / PUE
+total_energy_mwh_per_year,240000.0,MWh/year,24 TWh global × 1% campus scale
+carbon_factor_kg_co2_per_kwh,0.057,kgCO2/kWh,EU/France low-carbon grid
+carbon_free_energy_percent,64,%,Google Environmental Report 2024
+renewable_energy_match_percent,100,%,Google Environmental Report 2024
+pue,1.1,ratio,Google Environmental Report 2024
+dcie_percent,90.9091,%,Computed: IT/Total × 100
+co2_tonnes_per_year,13680.0,tCO2/year,Computed
+num_servers_approx,5000,units,Estimated for campus scale
+avg_cpu_utilization_percent,55,%,Google operational benchmark
+cooling_type,Water+air hybrid,-,Google Environmental Report 2024
+aisle_containment,Yes,-,Google standard practice
