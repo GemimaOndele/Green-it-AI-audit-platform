@@ -786,6 +786,15 @@ with st.sidebar:
     case_study_defaults = get_case_study_defaults() if use_real_case else {}
     if use_real_case:
         st.caption("Using Google case study dataset from case_study/ for baseline inputs.")
+    if "use_ml_ranking" not in st.session_state:
+        st.session_state.use_ml_ranking = False
+    if use_real_case:
+        st.session_state.use_ml_ranking = True
+    use_ml_ranking = st.toggle(
+        "Enable ML ranking (phase 2)",
+        value=st.session_state.use_ml_ranking
+    )
+    st.session_state.use_ml_ranking = use_ml_ranking
     with st.expander("Document Uploads (Audit)", expanded=False):
         st.caption("Upload PDF/CSV for audit. Files are stored locally and synced to HF if configured.")
         uploaded_docs = st.file_uploader(
@@ -2146,7 +2155,7 @@ if page == "Dashboard":
             "has_aisle_containment": aisle_containment,
             "virtualization_level_pct": virtualization_level,
             "cooling_type": case_study_defaults.get("cooling_type", "air"),
-            "use_ml_ranking": False,
+            "use_ml_ranking": st.session_state.get("use_ml_ranking", False),
         }
         engine = RecommendationEngine(verbose=False)
         try:
@@ -2188,6 +2197,43 @@ if page == "Dashboard":
                 f"</div>",
                 unsafe_allow_html=True,
             )
+        show_more = st.checkbox("Show additional suggestions (informational)", value=False)
+        if show_more:
+            info = []
+            if cpu_utilization >= 30:
+                info.append(
+                    f"Consolidate underutilized servers (not triggered: CPU {cpu_utilization:.1f}% ≥ 30%)"
+                )
+            cooling_label = ui_inputs["cooling_type"].replace("-", " ").title()
+            if not (cooling_setpoint < 24 and ui_inputs["cooling_type"] in ["air", "hybrid"]):
+                info.append(
+                    f"Increase cooling setpoint (not triggered: setpoint {cooling_setpoint:.1f}°C or cooling type {cooling_label})"
+                )
+            if aisle_containment or pue <= 1.5:
+                info.append(
+                    f"Add hot/cold aisle containment (not triggered: containment={aisle_containment}, PUE {pue:.2f})"
+                )
+            if pue <= 1.5:
+                info.append(f"Optimize power distribution (not triggered: PUE {pue:.2f} ≤ 1.5)")
+            if carbon_factor <= 0.2:
+                info.append(
+                    f"Procure renewable energy (not triggered: carbon factor {carbon_factor:.3f} ≤ 0.2)"
+                )
+            if info:
+                st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
+                st.markdown("<div class='subtle'><b>Additional suggestions (not triggered)</b></div>", unsafe_allow_html=True)
+                for item in info:
+                    st.markdown(f"<div class='subtle'>• {item}</div>", unsafe_allow_html=True)
+        st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
+        st.markdown("<div class='subtle'><b>Best practices (always applicable)</b></div>", unsafe_allow_html=True)
+        best_practices = [
+            "Keep continuous monitoring of PUE/DCiE and cooling performance.",
+            "Review workload placement to avoid idle capacity and hotspots.",
+            "Maintain containment integrity and airflow management.",
+            "Track energy mix improvements and document carbon reductions.",
+        ]
+        for item in best_practices:
+            st.markdown(f"<div class='subtle'>• {item}</div>", unsafe_allow_html=True)
 
     st.markdown("<div id='simulation' class='section-title'>Before / After Simulation</div>", unsafe_allow_html=True)
     actions = [{"estimated_saving_pct": r.estimated_saving_pct} for r in recommendations]
