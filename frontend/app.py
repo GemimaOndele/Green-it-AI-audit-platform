@@ -719,46 +719,46 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-if hasattr(st, "query_params"):
-    query = st.query_params
-else:
-    query = {}
-
-theme_param = None
-if isinstance(query, dict):
-    theme_param = query.get("theme")
-    if isinstance(theme_param, list):
-        theme_param = theme_param[0]
-
 with st.sidebar:
     st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
     if "compact_sidebar" not in st.session_state:
         st.session_state.compact_sidebar = False
     if "light_mode" not in st.session_state:
+        theme_param = None
+        if hasattr(st, "query_params"):
+            theme_param = st.query_params.get("theme")
+            if isinstance(theme_param, list):
+                theme_param = theme_param[0] if theme_param else None
         st.session_state.light_mode = theme_param == "light"
     light_mode = st.toggle("Light mode (white)", value=st.session_state.light_mode)
     st.session_state.light_mode = light_mode
     dark_mode = not light_mode
+    theme_param = "light" if light_mode else "dark"
+    if hasattr(st, "query_params"):
+        qp = dict(st.query_params)
+        qp["theme"] = theme_param
+        st.query_params.update(qp)
+    else:
+        st.experimental_set_query_params(theme=theme_param)
     st.caption(f"Theme: {'Light' if light_mode else 'Dark'}")
     compact_sidebar = st.toggle("Compact sidebar", value=st.session_state.compact_sidebar)
     if st.button("Toggle sidebar width"):
         st.session_state.compact_sidebar = not st.session_state.compact_sidebar
         compact_sidebar = st.session_state.compact_sidebar
-    theme_q = "&theme=light" if light_mode else ""
     st.markdown(
         f"""
         <div class="icon-nav">
-            <a href="?page=landing{theme_q}" title="Landing" target="_self">
+            <a href="?page=landing&theme={theme_param}" title="Landing" target="_self">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                  xmlns="http://www.w3.org/2000/svg"><path d="M4 10h16v10H4z" fill="#7ea6ff"/>
                  <path d="M12 4l8 6H4l8-6z" fill="#bcd0ff"/></svg>
             </a>
-            <a href="?page=dashboard{theme_q}" title="Dashboard" target="_self">
+            <a href="?page=dashboard&theme={theme_param}" title="Dashboard" target="_self">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                  xmlns="http://www.w3.org/2000/svg"><path d="M5 19h14v2H5z" fill="#7ea6ff"/>
                  <path d="M6 17V9h3v8H6zm5 0V5h3v12h-3zm5 0v-6h3v6h-3z" fill="#bcd0ff"/></svg>
             </a>
-            <a href="?page=about{theme_q}" title="About" target="_self">
+            <a href="?page=about&theme={theme_param}" title="About" target="_self">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                  xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#7ea6ff" stroke-width="2"/>
                  <path d="M12 8h.01M11 11h2v5h-2z" fill="#bcd0ff"/></svg>
@@ -769,10 +769,10 @@ with st.sidebar:
             <span class="menu-badge">LIVE</span>
         </div>
         <div class="nav-list">
-            <a href="#metrics" target="_self">Metrics</a>
-            <a href="#recommendations" target="_self">Recommendations</a>
-            <a href="#simulation" target="_self">Simulation</a>
-            <a href="#about" target="_self">About</a>
+            <a href="?page=dashboard&theme={theme_param}#metrics" target="_self">Metrics</a>
+            <a href="?page=dashboard&theme={theme_param}#recommendations" target="_self">Recommendations</a>
+            <a href="?page=dashboard&theme={theme_param}#simulation" target="_self">Simulation</a>
+            <a href="?page=about&theme={theme_param}#about" target="_self">About</a>
         </div>
         """,
         unsafe_allow_html=True,
@@ -780,7 +780,7 @@ with st.sidebar:
     if compact_sidebar:
         st.caption("Expand sidebar to edit inputs.")
     st.markdown("<div class='menu-item'><span>GreenDC Audit AI</span><span class='menu-badge'>OFFLINE</span></div>", unsafe_allow_html=True)
-    st.markdown('<div class="nav-list"><a href="#assistant" target="_self">Open GreenDC Audit AI</a></div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="nav-list"><a href="?page=dashboard&theme={theme_param}#assistant" target="_self">Open GreenDC Audit AI</a></div>', unsafe_allow_html=True)
     simulate_web = st.toggle("Simulate Web Search (offline)", value=False)
     if "assistant_visible" not in st.session_state:
         st.session_state.assistant_visible = True
@@ -788,7 +788,6 @@ with st.sidebar:
         st.session_state.assistant_visible = True
         if hasattr(st, "query_params"):
             st.query_params["page"] = "dashboard"
-            st.query_params["theme"] = "light" if light_mode else ""
         else:
             st.experimental_set_query_params(page="dashboard")
     case_study_options = ["Course exercises (test)", "Real case study (Google)"]
@@ -1261,6 +1260,10 @@ st.markdown(
         color: {text};
         font-size: 30px;
     }}
+    .logo .title-emoji {{
+        font-size: 30px;
+        line-height: 1;
+    }}
     .logo .title-frame {{
         display: inline-flex;
         align-items: center;
@@ -1305,7 +1308,7 @@ st.markdown(
         background: {panel};
         border: 1px solid rgba(126, 230, 180, 0.35);
         color: {text};
-        font-size: 16px;
+        font-size: 18px;
         font-weight: 700;
     }}
     .nav a:hover {{
@@ -1695,11 +1698,6 @@ if hasattr(st, "query_params"):
 else:
     query = st.experimental_get_query_params()
     page_param = query.get("page", ["landing"])[0]
-theme_param = query.get("theme")
-if isinstance(theme_param, list):
-    theme_param = theme_param[0]
-if theme_param == "light":
-    st.session_state.light_mode = True
 page_param = page_param.lower()
 if page_param not in {"landing", "dashboard", "about"}:
     page_param = "landing"
@@ -1954,7 +1952,6 @@ if page == "Landing":
         )
 
 if page == "Dashboard":
-    theme_q = "&theme=light" if st.session_state.get("light_mode") else ""
     st.markdown(
         f"""
         <div class="topbar">
@@ -1969,35 +1966,36 @@ if page == "Dashboard":
                       <circle cx="5" cy="18" r="2"/>
                       <path d="M7 18h10" stroke-width="1.5"/>
                     </svg>
-                    🌿⚡ <span class="title-strong">GreenDC</span>
+                    <span class="title-emoji">🌿⚡</span>
+                    <span class="title-strong">GreenDC</span>
                     <span style="font-size: 26px; color:#f8fffb; font-weight:800;">Audit Console</span>
                 </div>
             </div>
             <div class="nav">
                 <div class="dropdown">
-                    <a href="#metrics" target="_self">KPIs ▾</a>
+                    <a href="?page=dashboard&theme={theme_param}#metrics" target="_self">KPIs ▾</a>
                     <div class="dropdown-content">
-                        <a href="#metrics" target="_self">Energy KPIs</a>
-                        <a href="#recommendations" target="_self">AI Actions</a>
-                        <a href="#simulation" target="_self">Impact</a>
+                        <a href="?page=dashboard&theme={theme_param}#metrics" target="_self">Energy KPIs</a>
+                        <a href="?page=dashboard&theme={theme_param}#recommendations" target="_self">AI Actions</a>
+                        <a href="?page=dashboard&theme={theme_param}#simulation" target="_self">Impact</a>
                         <div class="dropdown">
-                            <a href="#metrics" target="_self">More ▸</a>
+                            <a href="?page=dashboard&theme={theme_param}#metrics" target="_self">More ▸</a>
                             <div class="dropdown-content">
-                                <a href="#metrics" target="_self">Efficiency</a>
-                                <a href="#recommendations" target="_self">Optimization</a>
+                                <a href="?page=dashboard&theme={theme_param}#metrics" target="_self">Efficiency</a>
+                                <a href="?page=dashboard&theme={theme_param}#recommendations" target="_self">Optimization</a>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="dropdown">
-                    <a href="?page=about{theme_q}#about" target="_self">Platform ▾</a>
+                    <a href="?page=about&theme={theme_param}#about" target="_self">Platform ▾</a>
                     <div class="dropdown-content">
-                        <a href="?page=about{theme_q}#about" target="_self">About</a>
-                        <a href="#simulation" target="_self">Simulation</a>
+                        <a href="?page=about&theme={theme_param}#about" target="_self">About</a>
+                        <a href="?page=dashboard&theme={theme_param}#simulation" target="_self">Simulation</a>
                         <div class="dropdown">
-                            <a href="?page=about{theme_q}#team" target="_self">Team ▸</a>
+                            <a href="?page=about&theme={theme_param}#team" target="_self">Team ▸</a>
                             <div class="dropdown-content">
-                                <a href="?page=about{theme_q}#team" target="_self">GreenAI Systems 🌱</a>
+                                <a href="?page=about&theme={theme_param}#team" target="_self">GreenAI Systems 🌱</a>
                             </div>
                         </div>
                     </div>
