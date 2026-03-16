@@ -66,6 +66,50 @@ real case-study datasets for the platform.
 - In the sidebar, choose **Real case study (Google)** to load Mike’s dataset.
 - Verify metrics match TDs using the **TD Validation** table.
 
+## Responsible: Joseph Fabrice TSAPFACK — AI & Recommendation Engine Lead
+
+### Module: 🤖 AI Recommendations (Rules + Optional ML Ranking)
+
+**Purpose**: Translate Green IT rules into explainable actions and prioritize them toward the -25% CO2 target.
+
+**How it works**:
+- Applies rule-based thresholds for consolidation, cooling, and virtualization.
+- Provides clear explanations and estimated savings per action.
+- Optional lightweight ML ranking to reorder actions (phase 2).
+
+**What it provides**:
+- `ai_recommendation/` with rules, models, and prioritization.
+- `ai_recommendation/ml_ranker.py` for optional ML ranking.
+
+## Responsible: Balasundaram NANDAA — Simulation & Scenario Analysis Lead
+
+### Module: 🔁 Simulation & Scenario Analysis
+
+**Purpose**: Validate before/after impacts and check if the -25% CO2 target is achievable.
+
+**How it works**:
+- Computes savings per action (MWh/year, tCO2/year).
+- Combines actions into an optimized scenario.
+- Produces tables and charts for the dashboard.
+
+**What it provides**:
+- `simulation/simulation_engine.py`, `simulation/ui_simulation.py`, `simulation/config.py`
+
+## Responsible: Pierre Joel TAAFO — Energy & Sustainability Expert
+
+### Module: 🌱 Energy Validation & Assumptions
+
+**Purpose**: Ensure realistic assumptions and ISO 50001 coherence for savings credibility.
+
+**How it works**:
+- Defines ranges for cooling savings, setpoint impact, and electrical losses.
+- Validates the -25% trajectory without exaggeration.
+- Provides non-technical sustainability justification.
+
+**What it provides**:
+- `Energy savings assumptions v2.pdf`
+- Energy validation content integrated into the dashboard.
+
 ## ▶️ Run Command
 
 Start the app locally with:
