@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GreenDC Audit Platform — Live App</title>
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        font-family: "Inter", "Segoe UI", Arial, sans-serif;
+        background: radial-gradient(120% 120% at 0% 0%, #dfe6ef 0%, #d2dbe7 55%, #c8d3df 100%);
+        color: #0b1324;
+      }
+      .wrap {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 32px 20px 48px;
+      }
+      .hero {
+        background: rgba(240, 244, 249, 0.98);
+        border: 1px solid rgba(15, 23, 42, 0.2);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+      }
+      .title {
+        font-size: 28px;
+        font-weight: 800;
+        margin: 0 0 8px 0;
+      }
+      .subtitle {
+        margin: 0;
+        color: #334155;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+      }
+      .card {
+        background: rgba(232, 238, 246, 0.98);
+        border: 1px solid rgba(15, 23, 42, 0.18);
+        border-radius: 14px;
+        padding: 16px;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.12);
+        text-align: center;
+      }
+      .card h2 {
+        font-size: 16px;
+        margin: 0 0 10px 0;
+      }
+      .qr {
+        width: 220px;
+        height: 220px;
+        margin: 8px auto 0;
+        border-radius: 12px;
+        border: 1px solid rgba(15, 23, 42, 0.18);
+        background: #ffffff;
+      }
+      .link {
+        display: inline-block;
+        margin-top: 12px;
+        padding: 8px 12px;
+        border-radius: 10px;
+        background: rgba(12, 58, 36, 0.9);
+        color: #f8fffb;
+        text-decoration: none;
+        font-weight: 700;
+      }
+      .note {
+        font-size: 12px;
+        color: #475569;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <div class="hero">
+        <h1 class="title">GreenDC Audit Platform — Live App</h1>
+        <p class="subtitle">
+          Scan the QR code or open the app directly.
+        </p>
+        <div class="grid">
+          <div class="card">
+            <h2>QR Code (Live)</h2>
+            <img
+              class="qr"
+              src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=https%3A%2F%2Fgreen-it-ai-audit-platform-m2xrtddyd5s7leghdcdifs.streamlit.app%2F%3Ftheme%3Ddark"
+              alt="QR code to the app"
+            />
+            <a
+              class="link"
+              href="https://green-it-ai-audit-platform-m2xrtddyd5s7leghdcdifs.streamlit.app/?theme=dark"
+              target="_self"
+              >Open App</a
+            >
+            <div class="note">Theme defaults to dark.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
