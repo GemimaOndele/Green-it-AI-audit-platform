@@ -1,79 +1,144 @@
-# AI-Based Data Center Energy Audit – Simulation Module
+# 🌿 GreenDC Audit Platform
 
-## Role
-**Balasundaram Nandaa**  
-**Simulation & Scenario Analysis Lead**
+An AI-assisted platform for energy and carbon audits of industrial data centers.
+Built with Green IT and Green Coding principles, the platform delivers a modern,
+3D-inspired dashboard experience while staying sober, efficient, and measurable.
 
-## Objective
-This module simulates the impact of optimization actions on a data center in order to compare baseline and optimized scenarios and validate whether the platform can achieve the target of **–25% CO₂ emissions**.
+## 🚀 Project Summary
 
-## Responsibilities
-The simulation module is responsible for:
+GreenDC Audit Platform computes core Green IT metrics (PUE, DCiE, CO2) and builds
+actionable optimization plans to reach a **-25% CO2 reduction target**. It is a
+lightweight, modular system that favors proportional computing and transparent logic.
 
-- simulating before/after energy consumption
-- simulating before/after CO₂ emissions
-- modeling savings for each optimization action
-- combining actions into one optimized scenario
-- validating whether the –25% CO₂ target is achieved
-- supporting comparison tables and charts in the UI
+## 🧪 Branch Focus (dev)
 
-## Files Updated
-The following files were added or updated for the simulation module:
+- **Branch**: `dev`
+- **Owner**: Gemima Ondele Pourou (Platform Architect & Frontend/Integration)
+- **Role**: Integration branch for all feature work before the stable demo on `main`.
+- **Note**: Full setup and OS-specific environment guides live on `main`.
 
-- `simulation/config.py`
-- `simulation/scenario.py`
-- `simulation/simulation_engine.py`
-- `simulation/ui_simulation.py`
+## ✨ Core Features
 
-## Methodology
-The simulation starts from the baseline metrics provided in the case study and applies optimization actions to estimate savings.
+- 🧾 Data center input form (energy, servers, utilization, cooling, carbon factor)
+- 📊 Automatic calculations: PUE, DCiE, annual CO2 emissions
+- 🤖 AI-assisted recommendations (rules-based, explainable)
+- 🔁 Before/after scenario simulation
+- 🖥️ Dashboard with tables, charts, and summary insights
+- 📂 Document ingestion (PDF/CSV/DOCX) with metric extraction
+- 🧠 GreenDC Audit AI for audit guidance and CO2 reduction plans
+- 🧾 Document QA for workload benchmarks and audit scenarios
+- ✅ Applied parameter tagging and KPI source badges
 
-### Actions simulated
-- **Server consolidation**
-- **Virtualization**
-- **Cooling optimization**
+## Responsible: Gémima ONDELE POUROU — Platform Architect & Frontend/Integration
 
-### Outputs calculated
-- baseline total energy consumption
-- optimized total energy consumption
-- energy saved in **MWh/year**
-- baseline CO₂ emissions
-- optimized CO₂ emissions
-- CO₂ saved in **tCO₂/year**
-- total reduction percentage
-- target achieved / not achieved
+### Module: 🖥️ Interface Behavior & Features (How it works)
 
-## Simulation Logic
-Single actions are evaluated independently to measure their individual impact.
+- **Navigation**: Top bar + sidebar sections (Metrics, Recommendations, Simulation, About).
+- **Case study selector**: Choose *Course exercises (test)* or *Real case study (Google)*.
+- **Inputs**: Sidebar fields are auto‑filled from documents or case study datasets.
+- **KPI cards**: PUE, DCiE, CO2 show **Applied** badges + **Source** (Document / Case study).
+- **Recommendations**: Explainable, rule‑based actions with estimated savings.
+- **Simulation**: Before/After energy scenario to validate the -25% CO2 target.
+- **Documents**: Upload PDF/CSV/DOCX; extraction applies metrics automatically.
+- **Document QA**: Analyze workload benchmarks separately from audit KPIs.
+- **Insights & graphs**: Clear charts with labeled axes (CO2 current vs target, energy mix, PUE comparison).
 
-A combined scenario is then built by applying all actions together to estimate the total optimization result.
+## Responsible: Mike‑Brady MBOLIM MBOCK — Data Processing & Energy Metrics Engineer
 
-The module returns:
-- `baseline`
-- `single_actions`
-- `combined`
+### Module: 🧾 Energy Metrics & Validation
 
-## Current Result
-Example result from the implemented simulation:
+**Purpose**: Implement all Green IT formulas, validate them against course TDs, and provide
+real case-study datasets for the platform.
 
-- **Baseline Energy:** 7884.0 MWh/year
-- **Optimized Energy:** 5026.05 MWh/year
-- **Energy Saved:** 2857.95 MWh/year
-- **Baseline CO₂:** 449.388 t/year
-- **Optimized CO₂:** 286.485 t/year
-- **CO₂ Saved:** 162.903 t/year
-- **Reduction Achieved:** 36.25%
-- **Target Achieved:** Yes
+**How it works**:
+- Uses deterministic formulas to compute **PUE**, **DCiE**, **annual energy**, and **CO2**.
+- Validates calculations against `case_study/td_validation.json` (course exercises).
+- Ships a real company case study (Google) via CSV/JSON and a short report.
 
-## UI Support
-The simulation module also supports frontend visualization through:
-- baseline vs optimized comparison table
-- savings by action table
-- baseline vs optimized energy chart
-- target validation display
+**What it provides**:
+- `energy_metrics/metrics.py` with core formulas.
+- `case_study/google_case_study.csv` and `case_study/google_case_study.json`.
+- `case_study/td_validation.json` for formula verification.
+- `docs/google_case_study_report.docx` as the short report.
 
-## How to Run
-Install dependencies:
+**How to run / test this part**:
+- Run the app: `streamlit run frontend/app.py`
+- In the sidebar, choose **Real case study (Google)** to load Mike’s dataset.
+- Verify metrics match TDs using the **TD Validation** table.
 
-```bash
-pip install -r requirements.txt
+## ▶️ Run Command
+
+Start the app locally with:
+
+- `streamlit run frontend/app.py`
+
+## 🧩 Architecture and Modules
+
+- `frontend/` : Streamlit UI and user flow
+- `energy_metrics/` : PUE, DCiE, CO2 formulas
+- `ai_recommendation/` : rule-based recommendation engine
+- `simulation/` : scenario modeling and impact aggregation
+- `case_study/` : example inputs and datasets
+- `knowledge_base/` : rules and standards for explainable AI
+
+## 📚 Documentation
+
+- `docs/gemima_ai_prompt.md` : Prompt Cursor IA + architecture + pseudo-code (Gemima)
+
+## 👥 Team Roles and Responsibilities
+
+- **Gemima Ondele Pourou** (Platform Architect & Frontend/Integration)
+  - Architecture, UI, integration, documentation
+- **Joseph Fabrice Tsapfack** (AI & Recommendation Engine)
+  - AI logic, rule design, action prioritization
+- **Mike-Brady Mbolim Mbock** (Energy Metrics Engineer)
+  - PUE/DCiE/CO2 calculations, data model, validation
+- **Balasundaram Nandaa** (Simulation & Scenario Analysis)
+  - Before/after simulation, impact modeling, validation
+- **Pierre Joel Taafo** (Energy & Sustainability)
+  - Energy assumptions, ISO 50001 alignment, validation
+
+## 🌱 Branch Strategy
+
+- `main` : stable demo version
+- `dev` : integration branch
+- Feature branches:
+  - `feature/frontend-dashboard` (Gemima)
+  - `feature/energy-metrics` (Mike-Brady)
+  - `feature/ai-recommendation` (Joseph)
+  - `feature/simulation-engine` (Nandaa)
+  - `feature/energy-validation` (Pierre Joel)
+
+## 🛠️ Tools and Stack
+
+- Python 3.x
+- Streamlit (UI)
+- Pandas (data handling)
+- JSON / CSV datasets
+- pypdf (PDF parsing)
+- python-docx (DOCX parsing)
+- huggingface_hub (dataset sync)
+- GitHub for collaboration
+
+## 🧭 User Guide (Local Run)
+
+1. Install dependencies
+   - `pip install -r requirements.txt`
+2. Start the app
+   - `streamlit run frontend/app.py`
+3. Enter data center inputs in the sidebar
+4. (Optional) Upload audit documents to auto-apply parameters
+5. Review metrics, recommendations, and simulation results
+6. Use Document QA for workload benchmark analysis
+
+## 🧰 Environment Setup
+
+See the `main` branch README for full Windows/macOS/Linux setup.
+
+## 🤝 Team Workflow Guide
+
+See `docs/TEAM_GUIDE.md` for the clone, branch, and PR workflow.
+
+## 🔗 More Details
+
+Full project description, case study, and roadmap are documented on `main`.
