@@ -1267,6 +1267,7 @@ st.markdown(
         letter-spacing: 0.02em;
         color: {text};
         font-size: 30px;
+        flex-wrap: wrap;
     }}
     .logo .title-emoji {{
         font-size: 30px;
@@ -1739,6 +1740,37 @@ st.markdown(
         .block-container {{
             padding-left: 1rem !important;
             padding-right: 1rem !important;
+        }}
+    }}
+    @media (max-width: 520px) {{
+        .topbar {{
+            padding: 10px 12px;
+        }}
+        .logo {{
+            font-size: 20px;
+            gap: 6px;
+        }}
+        .logo .title-emoji {{
+            font-size: 20px;
+        }}
+        .logo .title-strong {{
+            font-size: 20px;
+            padding: 4px 6px;
+        }}
+        .title-frame {{
+            padding: 4px 6px;
+            gap: 6px;
+        }}
+        .title-frame svg {{
+            width: 20px;
+            height: 20px;
+        }}
+        .nav {{
+            gap: 6px;
+        }}
+        .nav a {{
+            font-size: 13px;
+            padding: 5px 6px;
         }}
     }}
     {".compact [data-testid='stSidebar'] { width: 72px !important; }" if compact_sidebar else ""}
