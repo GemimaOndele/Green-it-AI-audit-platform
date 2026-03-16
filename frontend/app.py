@@ -2335,6 +2335,47 @@ if page == "Dashboard":
         st.success("Target -25% CO2 is achieved.")
     else:
         st.warning("Target -25% CO2 is not achieved.")
+    st.markdown("<div class='soft-divider'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='section-title'>Energy Validation (Assumptions)</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='subtle'>Ranges validated by the Energy & Sustainability expert to keep the -25% trajectory realistic.</div>",
+        unsafe_allow_html=True,
+    )
+    assumptions_df = pd.DataFrame([
+        {
+            "Area": "Cooling savings (containment + airflow)",
+            "Range": "15–35% cooling energy reduction",
+            "Note": "Previously uncontained rooms",
+        },
+        {
+            "Area": "Temperature setpoint impact",
+            "Range": "3–5% cooling savings per +1°C",
+            "Note": "Example: +4°C → ~12–20% cooling savings",
+        },
+        {
+            "Area": "Electrical losses (UPS / power chain)",
+            "Range": "2–8% overall energy reduction",
+            "Note": "Efficiency uplift (e.g., ~90% → ~95%)",
+        },
+    ])
+    st.dataframe(assumptions_df, use_container_width=True)
+    st.markdown(
+        "<div class='subtle'>ISO 50001 coherence: measure energy use → define indicators (PUE, kWh) → build a quantified action plan.</div>",
+        unsafe_allow_html=True,
+    )
+    v2_doc_path = os.path.join(PROJECT_ROOT, "Energy savings assumptions v2.pdf")
+    legacy_doc_path = os.path.join(PROJECT_ROOT, "Energy savings assumptions.pdf")
+    doc_path = v2_doc_path if os.path.exists(v2_doc_path) else legacy_doc_path
+    if os.path.exists(doc_path):
+        with open(doc_path, "rb") as handle:
+            st.download_button(
+                label="Download energy assumptions document (PDF)",
+                data=handle,
+                file_name=os.path.basename(doc_path),
+                mime="application/pdf",
+            )
+    else:
+        st.caption("Energy assumptions document not found in project root.")
     doc_texts = st.session_state.get("doc_texts", [])
     if doc_texts:
         inputs = extract_workload_inputs("\n".join(doc_texts))
