@@ -1251,6 +1251,14 @@ st.markdown(
         gap: 12px;
         overflow: visible;
     }}
+    .nav {{
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: relative;
+        overflow: visible;
+        z-index: 1200;
+    }}
     .logo {{
         display: flex;
         align-items: center;
@@ -1318,6 +1326,7 @@ st.markdown(
     .dropdown {{
         position: relative;
         display: inline-block;
+        overflow: visible;
     }}
     .dropdown-content {{
         display: none;
@@ -1328,7 +1337,9 @@ st.markdown(
         border-radius: 12px;
         box-shadow: 0 10px 20px rgba(0,0,0,0.35);
         padding: 6px;
-        z-index: 1000;
+        z-index: 2000;
+        right: 0;
+        overflow: visible;
     }}
     .dropdown:hover .dropdown-content {{
         display: block;
@@ -1337,8 +1348,9 @@ st.markdown(
         position: relative;
     }}
     .dropdown .dropdown-content .dropdown .dropdown-content {{
-        left: 160px;
+        left: -170px;
         top: 0;
+        right: auto;
     }}
     .dropdown-content a {{
         display: block;
