@@ -702,46 +702,63 @@ st.markdown(
     table.case-table {
         width: 100%;
         border-collapse: collapse;
-        color: #e9edff;
+        color: var(--case-text);
         font-size: 0.92rem;
     }
     table.case-table th, table.case-table td {
-        border: 1px solid rgba(43, 214, 115, 0.6);
+        border: 1px solid var(--case-border);
         padding: 8px 10px;
+        background: var(--case-cell-bg);
     }
     table.case-table th {
-        background: rgba(28, 80, 52, 0.45);
-        color: #bff7d4;
+        background: var(--case-head-bg);
+        color: var(--case-head-text);
     }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
+if hasattr(st, "query_params"):
+    query = st.query_params
+else:
+    query = {}
+
+theme_param = None
+if isinstance(query, dict):
+    theme_param = query.get("theme")
+    if isinstance(theme_param, list):
+        theme_param = theme_param[0]
+
 with st.sidebar:
     st.markdown("<div class='sidebar-title'>CONTROL PANEL</div>", unsafe_allow_html=True)
     if "compact_sidebar" not in st.session_state:
         st.session_state.compact_sidebar = False
-    dark_mode = True
-    st.caption("Theme: Dark (locked)")
+    if "light_mode" not in st.session_state:
+        st.session_state.light_mode = theme_param == "light"
+    light_mode = st.toggle("Light mode (white)", value=st.session_state.light_mode)
+    st.session_state.light_mode = light_mode
+    dark_mode = not light_mode
+    st.caption(f"Theme: {'Light' if light_mode else 'Dark'}")
     compact_sidebar = st.toggle("Compact sidebar", value=st.session_state.compact_sidebar)
     if st.button("Toggle sidebar width"):
         st.session_state.compact_sidebar = not st.session_state.compact_sidebar
         compact_sidebar = st.session_state.compact_sidebar
+    theme_q = "&theme=light" if light_mode else ""
     st.markdown(
-        """
+        f"""
         <div class="icon-nav">
-            <a href="?page=landing" title="Landing">
+            <a href="?page=landing{theme_q}" title="Landing" target="_self">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                  xmlns="http://www.w3.org/2000/svg"><path d="M4 10h16v10H4z" fill="#7ea6ff"/>
                  <path d="M12 4l8 6H4l8-6z" fill="#bcd0ff"/></svg>
             </a>
-            <a href="?page=dashboard" title="Dashboard">
+            <a href="?page=dashboard{theme_q}" title="Dashboard" target="_self">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                  xmlns="http://www.w3.org/2000/svg"><path d="M5 19h14v2H5z" fill="#7ea6ff"/>
                  <path d="M6 17V9h3v8H6zm5 0V5h3v12h-3zm5 0v-6h3v6h-3z" fill="#bcd0ff"/></svg>
             </a>
-            <a href="?page=about" title="About">
+            <a href="?page=about{theme_q}" title="About" target="_self">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
                  xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#7ea6ff" stroke-width="2"/>
                  <path d="M12 8h.01M11 11h2v5h-2z" fill="#bcd0ff"/></svg>
@@ -752,10 +769,10 @@ with st.sidebar:
             <span class="menu-badge">LIVE</span>
         </div>
         <div class="nav-list">
-            <a href="#metrics">Metrics</a>
-            <a href="#recommendations">Recommendations</a>
-            <a href="#simulation">Simulation</a>
-            <a href="#about">About</a>
+            <a href="#metrics" target="_self">Metrics</a>
+            <a href="#recommendations" target="_self">Recommendations</a>
+            <a href="#simulation" target="_self">Simulation</a>
+            <a href="#about" target="_self">About</a>
         </div>
         """,
         unsafe_allow_html=True,
@@ -763,7 +780,7 @@ with st.sidebar:
     if compact_sidebar:
         st.caption("Expand sidebar to edit inputs.")
     st.markdown("<div class='menu-item'><span>GreenDC Audit AI</span><span class='menu-badge'>OFFLINE</span></div>", unsafe_allow_html=True)
-    st.markdown('<div class="nav-list"><a href="#assistant">Open GreenDC Audit AI</a></div>', unsafe_allow_html=True)
+    st.markdown('<div class="nav-list"><a href="#assistant" target="_self">Open GreenDC Audit AI</a></div>', unsafe_allow_html=True)
     simulate_web = st.toggle("Simulate Web Search (offline)", value=False)
     if "assistant_visible" not in st.session_state:
         st.session_state.assistant_visible = True
@@ -771,6 +788,7 @@ with st.sidebar:
         st.session_state.assistant_visible = True
         if hasattr(st, "query_params"):
             st.query_params["page"] = "dashboard"
+            st.query_params["theme"] = "light" if light_mode else ""
         else:
             st.experimental_set_query_params(page="dashboard")
     case_study_options = ["Course exercises (test)", "Real case study (Google)"]
@@ -1035,20 +1053,28 @@ if dark_mode:
     card_bg = "linear-gradient(180deg, rgba(24, 36, 72, 0.98) 0%, rgba(12, 20, 40, 0.98) 100%)"
     hover_bg = "rgba(28, 40, 78, 0.95)"
 else:
-    # Soft-dark corporate palette to avoid white glare.
-    bg = "radial-gradient(120% 120% at 0% 0%, #121a2c 0%, #0f1628 60%, #0b111f 100%)"
-    text = "#e5ecff"
-    muted = "#b6c5e6"
-    panel = "rgba(21, 30, 54, 0.92)"
-    panel_border = "rgba(255,255,255,0.12)"
-    card_bg = "linear-gradient(180deg, rgba(28, 40, 72, 0.98) 0%, rgba(16, 24, 48, 0.98) 100%)"
-    hover_bg = "rgba(32, 46, 86, 0.95)"
+    bg = "radial-gradient(120% 120% at 0% 0%, #b9c4d3 0%, #b2bfce 55%, #a9b7c7 100%)"
+    text = "#0b1324"
+    muted = "#4b5563"
+    panel = "rgba(198, 210, 226, 0.98)"
+    panel_border = "rgba(15, 23, 42, 0.24)"
+    card_bg = "linear-gradient(180deg, rgba(202, 214, 229, 0.98) 0%, rgba(192, 205, 222, 0.98) 100%)"
+    hover_bg = "rgba(176, 194, 214, 0.96)"
+text_shadow = "0 2px 6px rgba(0,0,0,0.25)" if dark_mode else "none"
 
 st.markdown(
     f"""
     <style>
     html {{
         scroll-behavior: smooth;
+    }}
+    :root {{
+        --case-text: {text};
+        --case-border: {"rgba(43, 214, 115, 0.6)" if dark_mode else "rgba(43, 214, 115, 0.45)"};
+        --case-head-bg: {"rgba(28, 80, 52, 0.45)" if dark_mode else "rgba(43, 214, 115, 0.18)"};
+        --case-head-text: {"#bff7d4" if dark_mode else "#0b3d1e"};
+        --case-cell-bg: {"transparent" if dark_mode else "rgba(255, 255, 255, 0.85)"};
+        --icon-color: {"#bcd0ff" if dark_mode else "#1f2937"};
     }}
     .stApp {{
         background: {bg};
@@ -1063,6 +1089,13 @@ st.markdown(
     [data-testid="stAppViewContainer"], .block-container {{
         background: transparent !important;
     }}
+    [data-testid="stAppViewContainer"]::before {{
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: {bg};
+        z-index: -1;
+    }}
     [data-testid="stSidebar"] {{
         background: {panel} !important;
     }}
@@ -1070,7 +1103,7 @@ st.markdown(
         color: {text};
     }}
     a {{ color: {muted}; }}
-    [data-testid="stMetricValue"] {{ color: {text} !important; text-shadow: 0 2px 6px rgba(0,0,0,0.25); }}
+    [data-testid="stMetricValue"] {{ color: {text} !important; text-shadow: {text_shadow}; }}
     [data-testid="stMetricLabel"] {{ color: {muted} !important; }}
     input, textarea, select, button {{
         background: {panel} !important;
@@ -1210,13 +1243,14 @@ st.markdown(
         backdrop-filter: blur(10px);
         border: 1px solid rgba(126, 230, 180, 0.45);
         border-radius: 14px;
-        padding: 10px 14px;
+        padding: 14px 20px;
         margin: 6px 0 16px 0;
         box-shadow: 0 8px 20px rgba(0,0,0,0.35), 0 0 0 1px rgba(126, 230, 180, 0.15);
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 12px;
+        overflow: visible;
     }}
     .logo {{
         display: flex;
@@ -1225,6 +1259,37 @@ st.markdown(
         font-weight: 800;
         letter-spacing: 0.02em;
         color: {text};
+        font-size: 30px;
+    }}
+    .logo .title-frame {{
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        background: rgba(12, 58, 36, 0.85);
+        border: 1px solid rgba(43, 214, 115, 0.45);
+    }}
+    .logo .title-strong {{
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-radius: 6px;
+        background: rgba(12, 58, 36, 0.9);
+        border: 1px solid rgba(43, 214, 115, 0.55);
+        color: #f8fffb;
+        font-weight: 900;
+        font-size: 30px;
+        text-shadow: none;
+    }}
+    .title-frame svg {{
+        width: 30px;
+        height: 30px;
+    }}
+    .title-frame svg path, .title-frame svg circle {{
+        fill: #ffffff !important;
+        stroke: #ffffff !important;
     }}
     .logo span {{
         color: {muted};
@@ -1240,7 +1305,8 @@ st.markdown(
         background: {panel};
         border: 1px solid rgba(126, 230, 180, 0.35);
         color: {text};
-        font-size: 12px;
+        font-size: 16px;
+        font-weight: 700;
     }}
     .nav a:hover {{
         background: {hover_bg};
@@ -1292,17 +1358,17 @@ st.markdown(
     }}
     .hero {{
         background: {card_bg};
-        color: #f7f7f7;
+        color: {text};
         padding: 28px 32px;
         border-radius: 16px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        box-shadow: {"0 10px 30px rgba(0,0,0,0.35)" if dark_mode else "0 8px 18px rgba(15,23,42,0.12)"};
         border: 1px solid {panel_border};
         margin-bottom: 20px;
         position: relative;
         overflow: hidden;
     }}
-    .hero h1 {{ margin: 0 0 6px 0; font-size: 32px; }}
-    .hero p {{ margin: 0; opacity: 0.9; }}
+    .hero h1 {{ margin: 0 0 6px 0; font-size: 38px; }}
+    .hero p {{ margin: 0; opacity: 0.9; font-size: 15px; }}
     .hero::after {{
         content: "";
         position: absolute;
@@ -1321,20 +1387,20 @@ st.markdown(
         background: {panel};
         border: 1px solid {panel_border};
         color: {text};
-        font-size: 12px;
+        font-size: 14px;
         letter-spacing: 0.04em;
         margin-right: 8px;
     }}
     .badge-solid {{
-        background: rgba(76, 214, 180, 0.18);
-        border: 1px solid rgba(76, 214, 180, 0.45);
-        color: #c9fff2;
+        background: {"rgba(76, 214, 180, 0.18)" if dark_mode else "rgba(76, 214, 180, 0.25)"};
+        border: 1px solid {"rgba(76, 214, 180, 0.45)" if dark_mode else "rgba(76, 214, 180, 0.55)"};
+        color: {"#c9fff2" if dark_mode else "#0b3d1e"};
     }}
     .glass {{
         background: {panel};
         backdrop-filter: blur(10px);
         border: 1px solid {panel_border};
-        box-shadow: 0 12px 24px rgba(0,0,0,0.25);
+        box-shadow: {"0 12px 24px rgba(0,0,0,0.25)" if dark_mode else "0 8px 16px rgba(15,23,42,0.12)"};
         border-radius: 16px;
         padding: 16px 18px;
     }}
@@ -1343,11 +1409,11 @@ st.markdown(
         color: {text};
         padding: 16px 18px;
         border-radius: 14px;
-        box-shadow: 0 12px 28px rgba(0,0,0,0.45);
+        box-shadow: {"0 12px 28px rgba(0,0,0,0.45)" if dark_mode else "0 8px 18px rgba(15,23,42,0.12)"};
         border: 1px solid {panel_border};
     }}
-    .metric-card h3 {{ margin: 0 0 6px 0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: {muted}; }}
-    .metric-card .value {{ font-size: 28px; font-weight: 800; color: {text}; text-shadow: 0 2px 6px rgba(0,0,0,0.25); }}
+    .metric-card h3 {{ margin: 0 0 6px 0; font-size: 15px; text-transform: uppercase; letter-spacing: 0.1em; color: {muted}; }}
+    .metric-card .value {{ font-size: 34px; font-weight: 800; color: {text}; text-shadow: {text_shadow}; }}
     .stSidebar > div:first-child {{
         background: {panel};
         border-right: 1px solid {panel_border};
@@ -1357,7 +1423,7 @@ st.markdown(
     }}
     .sidebar-title {{
         font-weight: 800;
-        font-size: 14px;
+        font-size: 15px;
         letter-spacing: 0.08em;
         margin-bottom: 8px;
         color: {muted};
@@ -1409,7 +1475,7 @@ st.markdown(
         gap: 8px;
         padding: 6px 8px;
         border-radius: 10px;
-        background: {"rgba(20, 30, 60, 0.6)" if dark_mode else "rgba(230, 236, 255, 0.9)"};
+        background: {"rgba(20, 30, 60, 0.6)" if dark_mode else "rgba(238, 242, 249, 0.95)"};
         border: 1px solid rgba(126, 230, 180, 0.35);
         color: {text};
         margin-bottom: 6px;
@@ -1441,30 +1507,30 @@ st.markdown(
         color: {text};
     }}
     .stDataFrame, .stTable {{
-        background: rgba(20, 30, 60, 0.35);
+        background: {"rgba(20, 30, 60, 0.35)" if dark_mode else "rgba(182, 198, 217, 0.98)"};
         border-radius: 12px;
         padding: 6px;
     }}
     .stDataFrame div[role="grid"] {{
-        background: rgba(16, 24, 48, 0.9);
-        color: #e9edff;
+        background: {"rgba(16, 24, 48, 0.9)" if dark_mode else "rgba(190, 205, 222, 0.98)"};
+        color: {"#e9edff" if dark_mode else "#0b1324"};
     }}
     .stDataFrame div[role="grid"] * {{
-        color: #e9edff !important;
+        color: {"#e9edff" if dark_mode else "#0b1324"} !important;
     }}
     .stTabs [data-baseweb="tab"] {{
-        color: #c9d4ff;
-        background: rgba(20, 30, 60, 0.5);
+        color: {"#c9d4ff" if dark_mode else "#334155"};
+        background: {"rgba(20, 30, 60, 0.5)" if dark_mode else "rgba(245, 248, 253, 0.95)"};
         border-radius: 12px;
         margin-right: 6px;
         padding: 8px 14px;
-        border: 1px solid rgba(255,255,255,0.08);
+        border: 1px solid {"rgba(255,255,255,0.08)" if dark_mode else "rgba(15,23,42,0.12)"};
     }}
     .stTabs [aria-selected="true"] {{
-        background: rgba(52, 75, 140, 0.7);
-        color: #ffffff;
-        border: 1px solid rgba(255,255,255,0.2);
-        box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+        background: {"rgba(52, 75, 140, 0.7)" if dark_mode else "rgba(226, 236, 250, 0.95)"};
+        color: {"#ffffff" if dark_mode else "#0b1324"};
+        border: 1px solid {"rgba(255,255,255,0.2)" if dark_mode else "rgba(15,23,42,0.15)"};
+        box-shadow: {"0 6px 16px rgba(0,0,0,0.35)" if dark_mode else "0 6px 14px rgba(15,23,42,0.12)"};
     }}
     .footer {{
         margin-top: 20px;
@@ -1481,7 +1547,7 @@ st.markdown(
         border-radius: 16px;
         padding: 18px;
         margin-bottom: 16px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+        box-shadow: {"0 10px 20px rgba(0,0,0,0.35)" if dark_mode else "0 8px 16px rgba(15,23,42,0.12)"};
     }}
     .section + .section {{
         margin-top: 12px;
@@ -1489,6 +1555,17 @@ st.markdown(
     .section-title {{
         margin-top: 18px;
         margin-bottom: 12px;
+        font-size: 22px;
+        font-weight: 800;
+    }}
+    [id] {{
+        scroll-margin-top: 90px;
+    }}
+    :target {{
+        outline: 2px solid rgba(43, 214, 115, 0.6);
+        outline-offset: 6px;
+        border-radius: 12px;
+        box-shadow: 0 0 0 4px rgba(43, 214, 115, 0.12);
     }}
     .soft-divider {{
         height: 1px;
@@ -1496,7 +1573,7 @@ st.markdown(
         margin: 14px 0;
     }}
     .applied-badge {{
-        color: #7ee6b4;
+        color: {"#7ee6b4" if dark_mode else "#0b3d1e"};
         font-weight: 700;
         font-size: 11px;
     }}
@@ -1514,7 +1591,7 @@ st.markdown(
     .kpi-source {{
         margin-top: 6px;
         font-size: 11px;
-        color: #b6f5dc;
+        color: {"#b6f5dc" if dark_mode else "#1f5d3a"};
     }}
     .rec-card {{
         background: {card_bg};
@@ -1522,13 +1599,18 @@ st.markdown(
         border-radius: 14px;
         padding: 14px 16px;
         margin-bottom: 10px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.35);
+        box-shadow: {"0 10px 20px rgba(0,0,0,0.35)" if dark_mode else "0 8px 16px rgba(15,23,42,0.12)"};
+        color: {text};
+    }}
+    .rec-card {{
+        font-size: 14px;
+        line-height: 1.4;
     }}
     .rec-title {{
         font-weight: 700;
-        font-size: 14px;
+        font-size: 17px;
         margin-bottom: 6px;
-        color: #f1f4ff;
+        color: {text};
     }}
     .rec-meta {{
         display: inline-block;
@@ -1537,8 +1619,50 @@ st.markdown(
         background: {panel};
         border: 1px solid {panel_border};
         color: {text};
-        font-size: 11px;
+        font-size: 13px;
         margin-top: 8px;
+    }}
+    .rec-card * {{
+        color: {text} !important;
+    }}
+    .metric-card svg, .rec-card svg {{
+        width: 22px;
+        height: 22px;
+    }}
+    .metric-card svg path, .metric-card svg circle,
+    .rec-card svg path, .rec-card svg circle {{
+        fill: {text} !important;
+        stroke: {text} !important;
+    }}
+    .icon-nav svg path {{
+        fill: var(--icon-color) !important;
+        stroke: var(--icon-color) !important;
+    }}
+    .icon-nav svg {{
+        width: 20px;
+        height: 20px;
+    }}
+    .svg-icon, .action-icon {{
+        width: 20px;
+        height: 20px;
+    }}
+    .brand-badge {{
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        font-weight: 700;
+        color: {"#bff7d4" if dark_mode else "#0b3d1e"};
+        background: {"rgba(43, 214, 115, 0.18)" if dark_mode else "rgba(43, 214, 115, 0.22)"};
+        border: 1px solid {"rgba(43, 214, 115, 0.35)" if dark_mode else "rgba(43, 214, 115, 0.45)"};
+        box-shadow: {"0 0 10px rgba(126,230,180,0.35)" if dark_mode else "0 4px 10px rgba(15,23,42,0.12)"};
+    }}
+    .stCheckbox label, .stCheckbox span,
+    .stRadio label, .stRadio span,
+    .stSelectbox label, .stSelectbox span,
+    .stTextInput label, .stNumberInput label, .stTextArea label {{
+        color: {text} !important;
     }}
     .svg-icon {{
         vertical-align: middle;
@@ -1571,6 +1695,11 @@ if hasattr(st, "query_params"):
 else:
     query = st.experimental_get_query_params()
     page_param = query.get("page", ["landing"])[0]
+theme_param = query.get("theme")
+if isinstance(theme_param, list):
+    theme_param = theme_param[0]
+if theme_param == "light":
+    st.session_state.light_mode = True
 page_param = page_param.lower()
 if page_param not in {"landing", "dashboard", "about"}:
     page_param = "landing"
@@ -1778,7 +1907,7 @@ if page == "Landing":
                 <span class="badge">ISO 50001 Ready</span>
                 <span class="badge">-25% CO2 Target</span>
             </div>
-            <div style="margin-top: 10px; color:#7ee6b4; font-weight:700;">🍃 GreenAI Systems</div>
+            <div class="brand-badge" style="margin-top: 10px;">🍃 GreenAI Systems</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -1825,61 +1954,50 @@ if page == "Landing":
         )
 
 if page == "Dashboard":
+    theme_q = "&theme=light" if st.session_state.get("light_mode") else ""
     st.markdown(
-        """
+        f"""
         <div class="topbar">
             <div class="logo">
-                <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
-                 xmlns="http://www.w3.org/2000/svg">
-                  <defs>
-                    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stop-color="#7ee6b4"/>
-                      <stop offset="100%" stop-color="#4cd6b4"/>
-                    </linearGradient>
-                    <linearGradient id="dc" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stop-color="#cfe0ff"/>
-                      <stop offset="100%" stop-color="#9fb2ff"/>
-                    </linearGradient>
-                    <linearGradient id="node" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stop-color="#6fd3ff"/>
-                      <stop offset="100%" stop-color="#3e7bff"/>
-                    </linearGradient>
-                  </defs>
-                  <path d="M5 4h14v6H5z" fill="url(#dc)"/>
-                  <path d="M4 12h16v7H4z" fill="url(#dc)"/>
-                  <path d="M12 2c3.2 1 4.5 3.2 4.5 5.4-2-1.2-4.5-1.2-6.8 0 0-2.2 1.3-4.4 2.3-5.4z"
-                        fill="url(#leaf)"/>
-                  <circle cx="19" cy="18" r="2" fill="url(#node)"/>
-                  <circle cx="5" cy="18" r="2" fill="url(#node)"/>
-                  <path d="M7 18h10" stroke="#6fd3ff" stroke-width="1.5"/>
-                </svg>
-                🌿⚡ <span style="color:#7ee6b4;">GreenDC</span> <span>Audit Console</span>
+                <div class="title-frame">
+                    <svg viewBox="0 0 24 24" fill="none"
+                     xmlns="http://www.w3.org/2000/svg">
+                      <path d="M5 4h14v6H5z"/>
+                      <path d="M4 12h16v7H4z"/>
+                      <path d="M12 2c3.2 1 4.5 3.2 4.5 5.4-2-1.2-4.5-1.2-6.8 0 0-2.2 1.3-4.4 2.3-5.4z"/>
+                      <circle cx="19" cy="18" r="2"/>
+                      <circle cx="5" cy="18" r="2"/>
+                      <path d="M7 18h10" stroke-width="1.5"/>
+                    </svg>
+                    🌿⚡ <span class="title-strong">GreenDC</span>
+                    <span style="font-size: 26px; color:#f8fffb; font-weight:800;">Audit Console</span>
+                </div>
             </div>
             <div class="nav">
                 <div class="dropdown">
-                    <a href="#metrics">KPIs ▾</a>
+                    <a href="#metrics" target="_self">KPIs ▾</a>
                     <div class="dropdown-content">
-                        <a href="#metrics">Energy KPIs</a>
-                        <a href="#recommendations">AI Actions</a>
-                        <a href="#simulation">Impact</a>
+                        <a href="#metrics" target="_self">Energy KPIs</a>
+                        <a href="#recommendations" target="_self">AI Actions</a>
+                        <a href="#simulation" target="_self">Impact</a>
                         <div class="dropdown">
-                            <a href="#metrics">More ▸</a>
+                            <a href="#metrics" target="_self">More ▸</a>
                             <div class="dropdown-content">
-                                <a href="#metrics">Efficiency</a>
-                                <a href="#recommendations">Optimization</a>
+                                <a href="#metrics" target="_self">Efficiency</a>
+                                <a href="#recommendations" target="_self">Optimization</a>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="dropdown">
-                    <a href="?page=about#about">Platform ▾</a>
+                    <a href="?page=about{theme_q}#about" target="_self">Platform ▾</a>
                     <div class="dropdown-content">
-                        <a href="?page=about#about">About</a>
-                        <a href="#simulation">Simulation</a>
+                        <a href="?page=about{theme_q}#about" target="_self">About</a>
+                        <a href="#simulation" target="_self">Simulation</a>
                         <div class="dropdown">
-                            <a href="?page=about#team">Team ▸</a>
+                            <a href="?page=about{theme_q}#team" target="_self">Team ▸</a>
                             <div class="dropdown-content">
-                                <a href="?page=about#team">GreenAI Systems 🌱</a>
+                                <a href="?page=about{theme_q}#team" target="_self">GreenAI Systems 🌱</a>
                             </div>
                         </div>
                     </div>
