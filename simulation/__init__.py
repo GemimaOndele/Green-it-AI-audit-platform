@@ -1,3 +1,3 @@
-from .scenario import simulate_actions
+from .scenario import get_simulation_results, simulate_actions
 
-__all__ = ["simulate_actions"]
+__all__ = ["get_simulation_results", "simulate_actions"]
