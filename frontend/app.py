@@ -1693,6 +1693,54 @@ st.markdown(
     .compact .stSidebar label, .compact .stSidebar span, .compact .stSidebar p {{
         font-size: 10px;
     }}
+    @media (max-width: 900px) {{
+        .topbar {{
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }}
+        .nav {{
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }}
+        .logo {{
+            font-size: 24px;
+        }}
+        .logo .title-emoji {{
+            font-size: 24px;
+        }}
+        .logo .title-strong {{
+            font-size: 24px;
+            padding: 4px 8px;
+        }}
+        .title-frame svg {{
+            width: 22px;
+            height: 22px;
+        }}
+        .nav a {{
+            font-size: 14px;
+            padding: 6px 8px;
+        }}
+        [data-testid="stHorizontalBlock"] {{
+            flex-direction: column !important;
+            gap: 12px !important;
+        }}
+        [data-testid="stColumn"] {{
+            width: 100% !important;
+            flex: 1 1 100% !important;
+        }}
+        .metric-card {{
+            margin-bottom: 10px;
+        }}
+        .rec-card {{
+            margin-bottom: 12px;
+        }}
+        .block-container {{
+            padding-left: 1rem !important;
+            padding-right: 1rem !important;
+        }}
+    }}
     {".compact [data-testid='stSidebar'] { width: 72px !important; }" if compact_sidebar else ""}
     </style>
     """,
