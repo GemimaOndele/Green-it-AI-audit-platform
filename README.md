@@ -17,6 +17,14 @@ rule-based decisions aligned with Green IT principles.
 - Prioritization toward the -25% CO2 target
 - Phase 2 ML ranking (optional, lightweight linear model)
 
+## 🖥️ Interface Behavior & Features (How it works)
+
+- **Inputs**: Reads audit KPIs and infrastructure inputs from the dashboard.
+- **Rules engine**: Applies Green IT thresholds to trigger actions.
+- **Explainability**: Each action includes a reason and estimated saving.
+- **Prioritization**: Actions are ordered for maximum CO2 impact.
+- **Optional ML ranking**: Reorders actions using a tiny linear model (no heavy AI).
+
 ## 🧩 Module
 
 - `ai_recommendation/` : recommendation rules and scoring
@@ -31,6 +39,10 @@ How to enable:
 
 - Set `use_ml_ranking=True` in the `AuditContext`, or
 - Pass `use_ml_ranking=True` in the UI inputs before building the context.
+
+## ▶️ Run Command
+
+- `streamlit run frontend/app.py`
 
 ## 🔗 Project Overview
 
