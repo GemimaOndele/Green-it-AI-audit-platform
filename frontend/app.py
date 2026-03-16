@@ -1743,6 +1743,12 @@ st.markdown(
         }}
     }}
     @media (max-width: 520px) {{
+        html {{
+            font-size: 14px;
+        }}
+        body {{
+            -webkit-text-size-adjust: 100%;
+        }}
         .topbar {{
             padding: 10px 12px;
         }}
@@ -1775,6 +1781,24 @@ st.markdown(
     }}
     {".compact [data-testid='stSidebar'] { width: 72px !important; }" if compact_sidebar else ""}
     </style>
+    """,
+    unsafe_allow_html=True,
+)
+st.markdown(
+    """
+    <script>
+      (function () {
+        var meta = document.querySelector('meta[name="viewport"]');
+        if (meta) {
+          meta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes');
+        } else {
+          meta = document.createElement('meta');
+          meta.name = 'viewport';
+          meta.content = 'width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes';
+          document.head.appendChild(meta);
+        }
+      })();
+    </script>
     """,
     unsafe_allow_html=True,
 )
